@@ -1,16 +1,24 @@
 const TIMES=["7:00–8:00 AM","8:00–9:00 AM","9:00–10:00 AM","10:00–11:00 AM","11:00 AM–12:00 PM","12:00–1:00 PM","1:00–2:00 PM","2:00–3:00 PM","3:00–4:00 PM","4:00–5:00 PM","5:00–6:00 PM","6:00–7:00 PM"];
 const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat"];
 const PALETTE_L=[
-  {bg:"#E8F2EC",border:"#2E7D4F",text:"#1C5C38"},{bg:"#FBF0E0",border:"#B87020",text:"#8C5010"},
-  {bg:"#E8EEF8",border:"#1A3C6C",text:"#1A3C6C"},{bg:"#F4E8F8",border:"#7C3A8C",text:"#5C2870"},
-  {bg:"#FBE8E0",border:"#A85020",text:"#7C3010"},{bg:"#E6F0F0",border:"#1A5C5C",text:"#0C3C3C"},
-  {bg:"#F0EEE0",border:"#5C4A1A",text:"#3C2C08"},{bg:"#E8F0E0",border:"#3A5C1A",text:"#243C08"},
+  {bg:"#FEF0E0",border:"#F47920",text:"#C05010"},
+  {bg:"#E6F0EA",border:"#1A5C2A",text:"#1A5C2A"},
+  {bg:"#FEF8E0",border:"#C8980A",text:"#8A6408"},
+  {bg:"#E8EEF8",border:"#1A3C6C",text:"#1A3C6C"},
+  {bg:"#FDE8E8",border:"#C02828",text:"#8A1A1A"},
+  {bg:"#E8F4F0",border:"#1A7060",text:"#0E4A3A"},
+  {bg:"#F8EAF8",border:"#8C3A8C",text:"#5A205A"},
+  {bg:"#FFF0D8",border:"#D4780A",text:"#8A4A08"},
 ];
 const PALETTE_D=[
-  {bg:"#1A3D28",border:"#4CAF78",text:"#7DD8A0"},{bg:"#3A2810",border:"#E8A84A",text:"#F0C070"},
-  {bg:"#182040",border:"#6B98E8",text:"#90B8F8"},{bg:"#2A1840",border:"#B07AE0",text:"#C898F0"},
-  {bg:"#3A1E10",border:"#E08050",text:"#F0A070"},{bg:"#103030",border:"#48B8B8",text:"#70D8D8"},
-  {bg:"#302808",border:"#C8A830",text:"#E8C850"},{bg:"#182808",border:"#70B030",text:"#90D050"},
+  {bg:"#3A1E08",border:"#F4922A",text:"#F4B870"},
+  {bg:"#0E2818",border:"#4CAF68",text:"#70D890"},
+  {bg:"#302008",border:"#F5D048",text:"#F5E080"},
+  {bg:"#0E1828",border:"#6B98E8",text:"#90B8F8"},
+  {bg:"#300E0E",border:"#E85050",text:"#F07878"},
+  {bg:"#0E2820",border:"#40A888",text:"#60C8A8"},
+  {bg:"#280E28",border:"#B870B8",text:"#D898D8"},
+  {bg:"#281808",border:"#D88828",text:"#F0A848"},
 ];
 
 let rooms=[

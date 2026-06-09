@@ -1,7 +1,5 @@
 -- ============================================
--- RoomClaim Database
--- Run this in phpMyAdmin after creating
--- a database named: roomclaim
+--db name: across_cbea
 -- ============================================
 
 CREATE TABLE rooms (
@@ -58,7 +56,6 @@ CREATE TABLE users (
 INSERT INTO users (username, password, role) VALUES
 ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'),
 ('faculty', '$2y$10$TKh8H1.PEfUTrpjTEWFD8OvFjhJz7n6HYp3I6vFvWQkRLfKu7CQnm', 'faculty');
-
 -- Sample rooms
 INSERT INTO rooms (name, type, capacity, floor) VALUES
 ('CBEA 101', 'Lecture Room', 40, 'Ground Floor'),
