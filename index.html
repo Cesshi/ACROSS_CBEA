@@ -3,1452 +3,88 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>RoomClaim — CBEA</title>
+    <title>ACROSS-CBEA</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,600;9..144,700&family=DM+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
-    <style>
-      :root {
-        --bg: #f5f3ee;
-        --surface: #ffffff;
-        --surface2: #eeece6;
-        --border: #e0ddd5;
-        --text: #17160f;
-        --text2: #6b6860;
-        --text3: #a09c94;
-        --green: #1d5c3a;
-        --green-l: #e8f2ec;
-        --green-d: #164830;
-        --amber: #c47b1a;
-        --amber-l: #fdf3e3;
-        --red: #b83232;
-        --red-l: #fceaea;
-        --blue: #1a3a6b;
-        --blue-l: #e8eef8;
-        --shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 6px 20px rgba(0, 0, 0, 0.05);
-        --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.12);
-        --r: 10px;
-        --r-sm: 6px;
-      }
-      [data-theme="dark"] {
-        --bg: #111009;
-        --surface: #1a1910;
-        --surface2: #222118;
-        --border: #2c2b20;
-        --text: #f0ede4;
-        --text2: #9a9588;
-        --text3: #6b6860;
-        --green: #3a8c5c;
-        --green-l: #0f2318;
-        --green-d: #4aa870;
-        --amber: #d4944a;
-        --amber-l: #241808;
-        --red: #e05a4a;
-        --red-l: #2a1210;
-        --blue: #4a72b8;
-        --blue-l: #0e1828;
-        --shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
-        --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
-      }
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: "Instrument Sans", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-        font-size: 14px;
-        transition:
-          background 0.3s,
-          color 0.3s;
-      }
-      h1,
-      h2,
-      h3,
-      .brand-name {
-        font-family: "Syne", sans-serif;
-      }
-      button,
-      input,
-      select,
-      textarea {
-        font-family: inherit;
-      }
-
-      /* ── SCREENS ── */
-      .screen {
-        display: none;
-        min-height: 100vh;
-      }
-      .screen.active {
-        display: flex;
-      }
-
-      /* ══════════════════════════════
-   LANDING
-══════════════════════════════ */
-      #screen-landing {
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        background: var(--bg);
-        position: relative;
-        overflow: hidden;
-      }
-      #screen-landing::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-          ellipse 80% 60% at 50% 0%,
-          rgba(29, 92, 58, 0.08) 0%,
-          transparent 70%
-        );
-        pointer-events: none;
-      }
-      .landing-inner {
-        text-align: center;
-        z-index: 1;
-        animation: fadeUp 0.5s ease both;
-      }
-      @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(16px);
-        }
-      }
-      .landing-logo {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-        background: var(--green);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-        font-family: "Syne", sans-serif;
-        color: #fff;
-        font-size: 22px;
-        font-weight: 700;
-      }
-      .landing-inner h1 {
-        font-size: 36px;
-        font-weight: 700;
-        letter-spacing: -1px;
-        margin-bottom: 6px;
-      }
-      .landing-inner p {
-        color: var(--text2);
-        font-size: 14px;
-        margin-bottom: 40px;
-      }
-      .role-cards {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .role-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 28px 32px;
-        width: 200px;
-        cursor: pointer;
-        text-align: center;
-        box-shadow: var(--shadow);
-        transition: all 0.2s;
-      }
-      .role-card:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--green);
-      }
-      .role-icon {
-        font-size: 28px;
-        margin-bottom: 12px;
-      }
-      .role-card h3 {
-        font-size: 15px;
-        font-weight: 600;
-        margin-bottom: 4px;
-      }
-      .role-card p {
-        font-size: 12px;
-        color: var(--text3);
-      }
-      .theme-btn {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 6px 14px;
-        font-size: 12px;
-        cursor: pointer;
-        color: var(--text2);
-      }
-
-      /* ══════════════════════════════
-   LOGIN
-══════════════════════════════ */
-      #screen-login {
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-      }
-      .login-box {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 40px;
-        width: 100%;
-        max-width: 380px;
-        box-shadow: var(--shadow-lg);
-        animation: fadeUp 0.3s ease both;
-      }
-      .login-back {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 6px 14px;
-        font-size: 12px;
-        cursor: pointer;
-        color: var(--text2);
-      }
-      .login-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: var(--green-l);
-        color: var(--green);
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 20px;
-      }
-      .login-badge.faculty {
-        background: var(--blue-l);
-        color: var(--blue);
-      }
-      .login-box h2 {
-        font-size: 22px;
-        font-weight: 700;
-        margin-bottom: 4px;
-      }
-      .login-box .sub {
-        color: var(--text2);
-        font-size: 13px;
-        margin-bottom: 28px;
-      }
-      .fg {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-bottom: 14px;
-      }
-      label {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text2);
-        letter-spacing: 0.3px;
-        text-transform: uppercase;
-      }
-      input,
-      select,
-      textarea {
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        color: var(--text);
-        border-radius: var(--r-sm);
-        padding: 10px 13px;
-        font-size: 13px;
-        width: 100%;
-        outline: none;
-        transition: border-color 0.15s;
-      }
-      input:focus,
-      select:focus,
-      textarea:focus {
-        border-color: var(--green);
-        background: var(--surface);
-      }
-      .btn-primary {
-        width: 100%;
-        background: var(--green);
-        color: #fff;
-        border: none;
-        border-radius: var(--r-sm);
-        padding: 11px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.15s;
-        margin-top: 6px;
-      }
-      .btn-primary:hover {
-        opacity: 0.85;
-      }
-      .login-error {
-        font-size: 12px;
-        color: var(--red);
-        margin-top: 8px;
-        display: none;
-      }
-      .hint {
-        font-size: 11px;
-        color: var(--text3);
-        margin-top: 10px;
-        text-align: center;
-      }
-
-      /* ══════════════════════════════
-   SHARED NAV
-══════════════════════════════ */
-      .app-nav {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
-        padding: 0 28px;
-        height: 52px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .nav-brand {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-      }
-      .nav-dot {
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        background: var(--green);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 11px;
-        font-weight: 700;
-        font-family: "Syne", sans-serif;
-      }
-      .nav-name {
-        font-weight: 700;
-        font-size: 15px;
-        letter-spacing: -0.3px;
-      }
-      .nav-r {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .nav-user {
-        font-size: 12px;
-        color: var(--text3);
-      }
-      .btn-sm {
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: var(--r-sm);
-        padding: 5px 12px;
-        font-size: 12px;
-        cursor: pointer;
-        color: var(--text2);
-      }
-      .btn-sm:hover {
-        border-color: var(--green);
-        color: var(--green);
-      }
-
-      /* ══════════════════════════════
-   ADMIN LAYOUT
-══════════════════════════════ */
-      #screen-admin {
-        flex-direction: column;
-      }
-      .admin-body {
-        display: flex;
-        flex: 1;
-        min-height: calc(100vh - 52px);
-      }
-      .admin-aside {
-        width: 210px;
-        flex-shrink: 0;
-        background: var(--surface);
-        border-right: 1px solid var(--border);
-        padding: 20px 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-      .aside-sec {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-        color: var(--text3);
-        padding: 0 8px;
-        margin: 14px 0 4px;
-      }
-      .aside-sec:first-child {
-        margin-top: 0;
-      }
-      .a-nav {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        border-radius: var(--r-sm);
-        color: var(--text2);
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        border: none;
-        background: none;
-        width: 100%;
-        text-align: left;
-        transition: all 0.15s;
-      }
-      .a-nav:hover {
-        background: var(--surface2);
-        color: var(--text);
-      }
-      .a-nav.active {
-        background: var(--green-l);
-        color: var(--green);
-      }
-      .a-nav .badge {
-        margin-left: auto;
-        background: var(--amber);
-        color: #fff;
-        border-radius: 10px;
-        padding: 1px 7px;
-        font-size: 10px;
-        font-weight: 700;
-        display: none;
-      }
-      admin-main {
-        flex: 1;
-        overflow-y: auto;
-      }
-      .admin-main {
-        flex: 1;
-        overflow-y: auto;
-        padding: 28px 32px;
-      }
-      .pg {
-        display: none;
-      }
-      .pg.active {
-        display: block;
-      }
-      .pg-head {
-        margin-bottom: 24px;
-      }
-      .pg-head h1 {
-        font-size: 24px;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-      }
-      .pg-head p {
-        color: var(--text2);
-        font-size: 13px;
-        margin-top: 3px;
-      }
-
-      /* ── STAT GRID ── */
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-bottom: 24px;
-      }
-      .stat {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        padding: 16px 18px;
-        box-shadow: var(--shadow);
-      }
-      .stat-l {
-        font-size: 11px;
-        color: var(--text3);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        margin-bottom: 6px;
-      }
-      .stat-v {
-        font-size: 28px;
-        font-weight: 700;
-        font-family: "Syne", sans-serif;
-        line-height: 1;
-      }
-      .stat-s {
-        font-size: 11px;
-        color: var(--text3);
-        margin-top: 4px;
-      }
-      .stat.accent {
-        background: var(--green);
-        border-color: var(--green);
-      }
-      .stat.accent .stat-l,
-      .stat.accent .stat-v,
-      .stat.accent .stat-s {
-        color: #fff;
-      }
-
-      /* ── CARD ── */
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        padding: 20px;
-        box-shadow: var(--shadow);
-        margin-bottom: 20px;
-      }
-      .card-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-      }
-      .card-head h3 {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text2);
-      }
-
-      /* ── TABLE ── */
-      .tbl-wrap {
-        overflow-x: auto;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 600px;
-      }
-      th {
-        background: var(--surface2);
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.4px;
-        text-transform: uppercase;
-        color: var(--text3);
-        padding: 9px 12px;
-        border-bottom: 1px solid var(--border);
-        text-align: left;
-      }
-      td {
-        padding: 11px 12px;
-        border-bottom: 1px solid var(--border);
-        font-size: 13px;
-        vertical-align: middle;
-      }
-      tr:last-child td {
-        border-bottom: none;
-      }
-      tr:hover td {
-        background: var(--surface2);
-      }
-
-      /* ── BADGES ── */
-      .tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 9px;
-        border-radius: 20px;
-      }
-      .tag.green {
-        background: var(--green-l);
-        color: var(--green);
-      }
-      .tag.amber {
-        background: var(--amber-l);
-        color: var(--amber);
-      }
-      .tag.red {
-        background: var(--red-l);
-        color: var(--red);
-      }
-      .tag.blue {
-        background: var(--blue-l);
-        color: var(--blue);
-      }
-      .dot {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: currentColor;
-      }
-
-      /* ── ACTION BTNS ── */
-      .btn-a {
-        border: none;
-        border-radius: var(--r-sm);
-        padding: 5px 11px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.15s;
-      }
-      .btn-a:hover {
-        opacity: 0.8;
-      }
-      .btn-a.approve {
-        background: var(--green);
-        color: #fff;
-      }
-      .btn-a.reject {
-        background: var(--red-l);
-        color: var(--red);
-      }
-      .btn-a.edit {
-        background: var(--blue-l);
-        color: var(--blue);
-      }
-      .btn-a.del {
-        background: var(--red-l);
-        color: var(--red);
-      }
-      .acts {
-        display: flex;
-        gap: 5px;
-        flex-wrap: wrap;
-      }
-
-      /* ── FORM ── */
-      .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-      }
-      .fg.full {
-        grid-column: 1/-1;
-      }
-      textarea {
-        resize: vertical;
-        min-height: 80px;
-      }
-      .btn-save {
-        background: var(--green);
-        color: #fff;
-        border: none;
-        border-radius: var(--r-sm);
-        padding: 10px 22px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.15s;
-      }
-      .btn-save:hover {
-        opacity: 0.85;
-      }
-      .btn-cancel {
-        background: var(--surface2);
-        color: var(--text2);
-        border: 1px solid var(--border);
-        border-radius: var(--r-sm);
-        padding: 10px 18px;
-        font-size: 13px;
-        cursor: pointer;
-        margin-left: 8px;
-      }
-
-      /* ── SCHEDULE TABLE (admin) ── */
-      .sched-tbl {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 750px;
-      }
-      .sched-tbl th {
-        background: var(--surface2);
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.4px;
-        text-transform: uppercase;
-        color: var(--text3);
-        padding: 9px 10px;
-        border: 1px solid var(--border);
-        text-align: center;
-      }
-      .sched-tbl td {
-        border: 1px solid var(--border);
-        padding: 0;
-        min-width: 110px;
-        height: 46px;
-        vertical-align: top;
-      }
-      .t-cell {
-        background: var(--surface2);
-        font-size: 11px;
-        color: var(--text3);
-        font-weight: 600;
-        padding: 0 10px;
-        text-align: right;
-        white-space: nowrap;
-        height: 46px;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-      }
-      .slot-empty {
-        width: 100%;
-        height: 100%;
-        cursor: pointer;
-        transition: background 0.1s;
-      }
-      .slot-empty:hover {
-        background: var(--green-l);
-      }
-      .slot-booked {
-        border-left: 3px solid var(--green);
-        background: var(--green-l);
-        padding: 5px 7px;
-        height: 100%;
-        cursor: pointer;
-      }
-      .slot-booked.pending {
-        border-left-color: var(--amber);
-        background: var(--amber-l);
-      }
-      .slot-s {
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--green);
-        line-height: 1.3;
-      }
-      .slot-booked.pending .slot-s {
-        color: var(--amber);
-      }
-      .slot-p {
-        font-size: 10px;
-        color: var(--text3);
-        margin-top: 2px;
-      }
-
-      /* ══════════════════════════════
-   FACULTY LAYOUT
-══════════════════════════════ */
-      #screen-faculty {
-        flex-direction: column;
-      }
-      .fac-body {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 32px 20px;
-        width: 100%;
-      }
-      .fac-tabs {
-        display: flex;
-        gap: 4px;
-        background: var(--surface2);
-        border-radius: var(--r);
-        padding: 4px;
-        margin-bottom: 24px;
-        border: 1px solid var(--border);
-      }
-      .tab-btn {
-        flex: 1;
-        padding: 8px;
-        border: none;
-        background: none;
-        border-radius: var(--r-sm);
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        color: var(--text2);
-        transition: all 0.15s;
-      }
-      .tab-btn.active {
-        background: var(--surface);
-        color: var(--text);
-        font-weight: 600;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-      }
-      .fac-pg {
-        display: none;
-      }
-      .fac-pg.active {
-        display: block;
-      }
-
-      /* rooms grid faculty */
-      .rooms-g {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-      .room-c {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        padding: 14px 16px;
-        cursor: pointer;
-        transition: all 0.15s;
-        box-shadow: var(--shadow);
-      }
-      .room-c:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-      }
-      .room-n {
-        font-weight: 700;
-        font-size: 14px;
-        margin-bottom: 3px;
-      }
-      .room-t {
-        font-size: 11px;
-        color: var(--text3);
-        margin-bottom: 10px;
-      }
-      .occ-bar {
-        height: 3px;
-        border-radius: 2px;
-        background: var(--border);
-        margin-bottom: 8px;
-      }
-      .occ-fill {
-        height: 100%;
-        border-radius: 2px;
-        background: var(--green);
-        transition: width 0.3s;
-      }
-      .occ-fill.full {
-        background: var(--red);
-      }
-
-      /* schedule mini */
-      .mini-sched {
-        overflow-x: auto;
-      }
-      .mini-tbl {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 550px;
-      }
-      .mini-tbl th {
-        background: var(--surface2);
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.4px;
-        text-transform: uppercase;
-        color: var(--text3);
-        padding: 8px 10px;
-        border: 1px solid var(--border);
-        text-align: center;
-      }
-      .mini-tbl td {
-        border: 1px solid var(--border);
-        padding: 0;
-        min-width: 90px;
-        height: 40px;
-        vertical-align: top;
-      }
-      .mini-slot {
-        height: 100%;
-        padding: 4px 6px;
-      }
-      .mini-slot.booked {
-        background: var(--green-l);
-        border-left: 2px solid var(--green);
-      }
-      .mini-slot.pending {
-        background: var(--amber-l);
-        border-left: 2px solid var(--amber);
-      }
-      .mini-s {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--green);
-      }
-      .mini-slot.pending .mini-s {
-        color: var(--amber);
-      }
-      .mini-p {
-        font-size: 9px;
-        color: var(--text3);
-      }
-
-      /* request form */
-      .req-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        padding: 24px;
-        box-shadow: var(--shadow);
-      }
-      .req-card h3 {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 4px;
-      }
-      .req-card .sub {
-        font-size: 13px;
-        color: var(--text2);
-        margin-bottom: 20px;
-      }
-      .conflict-warn {
-        background: var(--amber-l);
-        border: 1px solid var(--amber);
-        border-radius: var(--r-sm);
-        padding: 10px 14px;
-        font-size: 12px;
-        color: var(--amber);
-        margin-top: 10px;
-        display: none;
-      }
-
-      /* my requests */
-      .my-reqs {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .my-req {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        padding: 14px 18px;
-        box-shadow: var(--shadow);
-      }
-      .req-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 4px;
-      }
-      .req-subj {
-        font-weight: 600;
-        font-size: 14px;
-      }
-      .req-det {
-        font-size: 12px;
-        color: var(--text2);
-      }
-
-      /* ── MODAL ── */
-      .modal-ov {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.45);
-        z-index: 200;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(3px);
-      }
-      .modal-ov.open {
-        display: flex;
-      }
-      .modal {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 28px;
-        width: 100%;
-        max-width: 500px;
-        box-shadow: var(--shadow-lg);
-        animation: slideUp 0.2s ease;
-      }
-      @keyframes slideUp {
-        from {
-          transform: translateY(14px);
-          opacity: 0;
-        }
-      }
-      .modal-hd {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-      }
-      .modal-hd h2 {
-        font-size: 18px;
-        font-weight: 700;
-      }
-      .modal-x {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--text3);
-        font-size: 22px;
-        line-height: 1;
-      }
-
-      /* ── TOAST ── */
-      .toast {
-        position: fixed;
-        bottom: 22px;
-        right: 22px;
-        background: var(--text);
-        color: var(--bg);
-        padding: 11px 18px;
-        border-radius: var(--r);
-        font-size: 13px;
-        font-weight: 500;
-        z-index: 999;
-        display: none;
-        animation: fadeIn 0.2s ease;
-      }
-      .toast.show {
-        display: block;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(6px);
-        }
-      }
-
-      .empty {
-        text-align: center;
-        padding: 40px;
-        color: var(--text3);
-        font-size: 13px;
-      }
-      .divider {
-        height: 1px;
-        background: var(--border);
-        margin: 20px 0;
-      }
-    </style>
+    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <!-- ══ LANDING ══ -->
-    <div class="screen active" id="screen-landing">
-      <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
-      <div class="landing-inner">
-        <div class="landing-logo">R</div>
-        <h1>RoomClaim</h1>
-        <p>Classroom Scheduling System · CBEA</p>
-        <div class="role-cards">
-          <div class="role-card" onclick="goLogin('admin')">
-            <div class="role-icon">🛠</div>
-            <h3>Admin</h3>
-            <p>Full schedule control & management</p>
-          </div>
-          <div class="role-card" onclick="goLogin('faculty')">
-            <div class="role-icon">👨‍🏫</div>
-            <h3>Faculty</h3>
-            <p>View schedule & submit requests</p>
-          </div>
-        </div>
+    <!-- TOOLTIP -->
+    <div class="tooltip" id="tooltip">
+      <div class="tt-subj" id="tt-subj"></div>
+      <div class="tt-row">
+        <span class="tt-lbl">Room</span
+        ><span class="tt-val" id="tt-room"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Faculty</span
+        ><span class="tt-val" id="tt-prof"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Group</span
+        ><span class="tt-val" id="tt-group"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Day</span><span class="tt-val" id="tt-day"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Time</span
+        ><span class="tt-val" id="tt-time"></span>
       </div>
     </div>
 
-    <!-- ══ LOGIN ══ -->
-    <div class="screen" id="screen-login">
-      <button class="login-back" onclick="goScreen('landing')">← Back</button>
-      <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
-      <div class="login-box">
-        <div id="login-badge" class="login-badge">Admin</div>
-        <h2 id="login-title">Admin Login</h2>
-        <p class="sub" id="login-sub">Access the scheduling dashboard.</p>
-        <div class="fg">
-          <label>Username</label>
-          <input type="text" id="l-user" placeholder="Enter username" />
+    <!-- NOTES MODAL -->
+    <div class="modal-ov" id="notes-modal">
+      <div class="modal" style="max-width: 400px">
+        <div class="modal-hd">
+          <h2>Request Notes</h2>
+          <button class="modal-x" onclick="closeModal('notes-modal')">×</button>
         </div>
-        <div class="fg">
-          <label>Password</label>
-          <input
-            type="password"
-            id="l-pass"
-            placeholder="••••••••"
-            onkeydown="if (event.key === 'Enter') doLogin();"
-          />
-        </div>
-        <p class="login-error" id="l-err">
-          Incorrect credentials. Please try again.
+        <p style="font-size: 12px; color: var(--t2); margin-bottom: 10px">
+          Notes from the requestee:
         </p>
-        <button class="btn-primary" onclick="doLogin()">Login</button>
-        <p class="hint" id="l-hint"></p>
+        <div class="notes-view" id="notes-view-content"></div>
+        <div class="divider"></div>
+        <button class="btn-save" onclick="closeModal('notes-modal')">
+          Close
+        </button>
       </div>
     </div>
 
-    <!-- ══ ADMIN ══ -->
-    <div class="screen" id="screen-admin">
-      <nav class="app-nav">
-        <div class="nav-brand">
-          <div class="nav-dot">R</div>
-          <span class="nav-name">RoomClaim</span>
-        </div>
-        <div class="nav-r">
-          <span class="nav-user">Admin</span>
-          <button class="btn-sm" onclick="toggleTheme()">☀/☾</button>
-          <button class="btn-sm" onclick="goScreen('landing')">Logout</button>
-        </div>
-      </nav>
-      <div class="admin-body">
-        <aside class="admin-aside">
-          <div class="aside-sec">Overview</div>
-          <button class="a-nav active" onclick="showAdminPg('dashboard', this)">
-            📊 Dashboard
-          </button>
-          <button class="a-nav" onclick="showAdminPg('schedule', this)">
-            📅 Schedule
-          </button>
-          <div class="aside-sec">Management</div>
-          <button class="a-nav" onclick="showAdminPg('rooms', this)">
-            🏫 Rooms
-          </button>
-          <button class="a-nav" onclick="showAdminPg('bookings', this)">
-            📋 Bookings
-          </button>
-          <button class="a-nav" onclick="showAdminPg('requests', this)">
-            📨 Requests
-            <span class="badge" id="req-badge"></span>
-          </button>
-        </aside>
-        <div class="admin-main">
-          <!-- DASHBOARD -->
-          <div class="pg active" id="apg-dashboard">
-            <div class="pg-head">
-              <h1>Dashboard</h1>
-              <p>Overview of the CBEA scheduling system.</p>
-            </div>
-            <div class="stats">
-              <div class="stat accent">
-                <div class="stat-l">Total Rooms</div>
-                <div class="stat-v" id="ds-rooms">8</div>
-                <div class="stat-s">CBEA classrooms</div>
-              </div>
-              <div class="stat">
-                <div class="stat-l">Approved</div>
-                <div class="stat-v" id="ds-approved">0</div>
-                <div class="stat-s">bookings this week</div>
-              </div>
-              <div class="stat">
-                <div class="stat-l">Pending</div>
-                <div class="stat-v" id="ds-pending">0</div>
-                <div class="stat-s">awaiting review</div>
-              </div>
-              <div class="stat">
-                <div class="stat-l">Rooms Used</div>
-                <div class="stat-v" id="ds-used">0</div>
-                <div class="stat-s">have bookings</div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-head"><h3>Recent Requests</h3></div>
-              <div class="tbl-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Faculty</th>
-                      <th>Subject</th>
-                      <th>Room</th>
-                      <th>Day & Time</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody id="dash-req-list"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- SCHEDULE -->
-          <div class="pg" id="apg-schedule">
-            <div class="pg-head">
-              <h1>Schedule</h1>
-              <p>Full weekly room schedule.</p>
-            </div>
-            <div class="card">
-              <div class="card-head">
-                <h3>Weekly View</h3>
-                <select
-                  id="a-room-filter"
-                  onchange="renderAdminSched()"
-                  style="font-size: 12px; padding: 5px 9px"
-                >
-                  <option value="">All Rooms</option>
-                </select>
-              </div>
-              <div class="tbl-wrap">
-                <table class="sched-tbl">
-                  <thead>
-                    <tr id="a-sched-head"></tr>
-                  </thead>
-                  <tbody id="a-sched-body"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- ROOMS -->
-          <div class="pg" id="apg-rooms">
-            <div class="pg-head">
-              <h1>Rooms</h1>
-              <p>Manage all CBEA classrooms.</p>
-            </div>
-            <div class="card">
-              <div class="card-head">
-                <h3>All Rooms</h3>
-                <button class="btn-save" onclick="openRoomModal()">
-                  + Add Room
-                </button>
-              </div>
-              <div class="tbl-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Room</th>
-                      <th>Type</th>
-                      <th>Capacity</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="rooms-tbl"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- BOOKINGS -->
-          <div class="pg" id="apg-bookings">
-            <div class="pg-head">
-              <h1>Bookings</h1>
-              <p>Manage all approved schedule entries.</p>
-            </div>
-            <div class="card">
-              <div class="card-head">
-                <h3>All Bookings</h3>
-                <button class="btn-save" onclick="openBookingModal()">
-                  + Add Booking
-                </button>
-              </div>
-              <div class="tbl-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Faculty</th>
-                      <th>Subject</th>
-                      <th>Room</th>
-                      <th>Day</th>
-                      <th>Time</th>
-                      <th>Section</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="bookings-tbl"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- REQUESTS -->
-          <div class="pg" id="apg-requests">
-            <div class="pg-head">
-              <h1>Requests</h1>
-              <p>Review and act on faculty room requests.</p>
-            </div>
-            <div id="req-list-wrap"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ FACULTY ══ -->
-    <div class="screen" id="screen-faculty">
-      <nav class="app-nav">
-        <div class="nav-brand">
-          <div class="nav-dot">R</div>
-          <span class="nav-name">RoomClaim</span>
-        </div>
-        <div class="nav-r">
-          <span class="nav-user">Faculty Portal</span>
-          <button class="btn-sm" onclick="toggleTheme()">☀/☾</button>
-          <button class="btn-sm" onclick="goScreen('landing')">Logout</button>
-        </div>
-      </nav>
-      <div class="fac-body">
-        <div class="fac-tabs">
-          <button
-            class="tab-btn active"
-            onclick="showFacPg('fac-schedule', this)"
-          >
-            📅 Schedule
-          </button>
-          <button class="tab-btn" onclick="showFacPg('fac-rooms', this)">
-            🏫 Rooms
-          </button>
-          <button class="tab-btn" onclick="showFacPg('fac-request', this)">
-            📝 Request
-          </button>
-          <button class="tab-btn" onclick="showFacPg('fac-myrequests', this)">
-            📨 My Requests
-          </button>
-        </div>
-
-        <!-- FAC: SCHEDULE -->
-        <div class="fac-pg active" id="fac-schedule">
-          <div class="card">
-            <div class="card-head">
-              <h3>Weekly Schedule</h3>
-              <select
-                id="f-room-filter"
-                onchange="renderFacSched()"
-                style="font-size: 12px; padding: 5px 9px"
-              >
-                <option value="">All Rooms</option>
-              </select>
-            </div>
-            <div class="mini-sched">
-              <table class="mini-tbl">
-                <thead>
-                  <tr id="f-sched-head"></tr>
-                </thead>
-                <tbody id="f-sched-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- FAC: ROOMS -->
-        <div class="fac-pg" id="fac-rooms">
-          <div class="rooms-g" id="fac-rooms-g"></div>
-        </div>
-
-        <!-- FAC: REQUEST -->
-        <div class="fac-pg" id="fac-request">
-          <div class="req-card">
-            <h3>Submit a Schedule Request</h3>
-            <p class="sub">
-              Fill out the form below. The admin will review your request.
-            </p>
-            <div class="form-grid">
-              <div class="fg">
-                <label>Your Name</label
-                ><input type="text" id="f-name" placeholder="Prof. Santos" />
-              </div>
-              <div class="fg">
-                <label>Subject / Course</label
-                ><input
-                  type="text"
-                  id="f-subj"
-                  placeholder="Business Finance"
-                />
-              </div>
-              <div class="fg">
-                <label>Section</label
-                ><input type="text" id="f-sec" placeholder="BSA 2-A" />
-              </div>
-              <div class="fg">
-                <label>Request Type</label>
-                <select id="f-reqtype" onchange="toggleChangeFields()">
-                  <option value="new">New Schedule</option>
-                  <option value="change">Change Existing Schedule</option>
-                </select>
-              </div>
-              <div class="fg">
-                <label>Preferred Room</label>
-                <select id="f-room">
-                  <option value="">Select room</option>
-                </select>
-              </div>
-              <div class="fg">
-                <label>Day</label>
-                <select id="f-day">
-                  <option value="">Select day</option>
-                  <option>Mon</option>
-                  <option>Tue</option>
-                  <option>Wed</option>
-                  <option>Thu</option>
-                  <option>Fri</option>
-                  <option>Sat</option>
-                </select>
-              </div>
-              <div class="fg">
-                <label>Time Slot</label>
-                <select id="f-time">
-                  <option value="">Select time</option>
-                </select>
-              </div>
-              <div class="fg" id="change-field" style="display: none">
-                <label>Reason for Change</label
-                ><input
-                  type="text"
-                  id="f-reason"
-                  placeholder="e.g. Room conflict"
-                />
-              </div>
-              <div class="fg full">
-                <label>Notes (optional)</label
-                ><textarea
-                  id="f-notes"
-                  placeholder="Additional info..."
-                ></textarea>
-              </div>
-            </div>
-            <div class="conflict-warn" id="conflict-warn">
-              ⚠ This room is already booked at the selected time. Please choose
-              another slot.
-            </div>
-            <div style="margin-top: 16px">
-              <button class="btn-save" onclick="submitFacRequest()">
-                Submit Request
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- FAC: MY REQUESTS -->
-        <div class="fac-pg" id="fac-myrequests">
-          <div class="my-reqs" id="my-reqs-list"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODALS -->
+    <!-- ROOM MODAL -->
     <div class="modal-ov" id="room-modal">
       <div class="modal">
         <div class="modal-hd">
-          <h2 id="rm-modal-title">Add Room</h2>
+          <h2 id="rm-title">Add Room</h2>
           <button class="modal-x" onclick="closeModal('room-modal')">×</button>
         </div>
         <div class="form-grid">
           <div class="fg">
-            <label>Room Name</label
-            ><input type="text" id="rm-name" placeholder="CBEA 101" />
+            <label class="lbl">Room Name</label
+            ><input type="text" id="rm-name" placeholder="e.g. CBEA 101" />
           </div>
           <div class="fg">
-            <label>Type</label
+            <label class="lbl">Type</label
             ><select id="rm-type">
               <option>Lecture Room</option>
               <option>Computer Lab</option>
               <option>Conference Room</option>
+              <option>Function Hall</option>
             </select>
           </div>
           <div class="fg">
-            <label>Capacity</label
+            <label class="lbl">Capacity</label
             ><input type="number" id="rm-cap" placeholder="40" />
           </div>
           <div class="fg">
-            <label>Building / Floor</label
+            <label class="lbl">Location</label
             ><input type="text" id="rm-floor" placeholder="Ground Floor" />
           </div>
+        </div>
+        <div class="alert danger" id="rm-err">
+          <span class="alert-icon">🚫</span><span id="rm-err-msg"></span>
         </div>
         <div class="divider"></div>
         <button class="btn-save" onclick="saveRoom()">Save Room</button>
@@ -1458,34 +94,35 @@
       </div>
     </div>
 
-    <div class="modal-ov" id="booking-modal">
+    <!-- BOOKING MODAL -->
+    <div class="modal-ov" id="reservation-modal">
       <div class="modal">
         <div class="modal-hd">
-          <h2 id="bk-modal-title">Add Booking</h2>
-          <button class="modal-x" onclick="closeModal('booking-modal')">
+          <h2 id="bk-title">Add Reservation</h2>
+          <button class="modal-x" onclick="closeModal('reservation-modal')">
             ×
           </button>
         </div>
         <div class="form-grid">
           <div class="fg">
-            <label>Faculty Name</label
+            <label class="lbl">Name</label
             ><input type="text" id="bk-prof" placeholder="Prof. Reyes" />
           </div>
           <div class="fg">
-            <label>Subject</label
+            <label class="lbl">Subject / Purpose</label
             ><input type="text" id="bk-subj" placeholder="Business Finance" />
           </div>
           <div class="fg">
-            <label>Section</label
-            ><input type="text" id="bk-sec" placeholder="BSA 2-A" />
+            <label class="lbl">Group / Section / Org</label
+            ><input type="text" id="bk-group" placeholder="BSA 2-A" />
           </div>
           <div class="fg">
-            <label>Room</label
-            ><select id="bk-room"></select>
+            <label class="lbl">Room</label
+            ><select id="bk-room" onchange="checkBkConflict()"></select>
           </div>
           <div class="fg">
-            <label>Day</label
-            ><select id="bk-day">
+            <label class="lbl">Day</label
+            ><select id="bk-day" onchange="checkBkConflict()">
               <option value="">Select</option>
               <option>Mon</option>
               <option>Tue</option>
@@ -1496,13 +133,25 @@
             </select>
           </div>
           <div class="fg">
-            <label>Time Slot</label
-            ><select id="bk-time"></select>
+            <label class="lbl">Time Slot</label
+            ><select id="bk-time" onchange="checkBkConflict()"></select>
           </div>
         </div>
+        <div
+          class="alert danger show"
+          id="bk-conflict"
+          style="display: none !important"
+        >
+          <span class="alert-icon">🚫</span
+          ><span id="bk-conflict-msg"
+            >This room is already reserved at that time.</span
+          >
+        </div>
         <div class="divider"></div>
-        <button class="btn-save" onclick="saveBooking()">Save Booking</button>
-        <button class="btn-cancel" onclick="closeModal('booking-modal')">
+        <button class="btn-save" onclick="saveBooking()">
+          Save Reservation
+        </button>
+        <button class="btn-cancel" onclick="closeModal('reservation-modal')">
           Cancel
         </button>
       </div>
@@ -1510,723 +159,1034 @@
 
     <div class="toast" id="toast"></div>
 
-    <script>
-      // ── DATA ──
-      const TIMES = [
-        "7:00–8:00 AM",
-        "8:00–9:00 AM",
-        "9:00–10:00 AM",
-        "10:00–11:00 AM",
-        "11:00 AM–12:00 PM",
-        "12:00–1:00 PM",
-        "1:00–2:00 PM",
-        "2:00–3:00 PM",
-        "3:00–4:00 PM",
-        "4:00–5:00 PM",
-        "5:00–6:00 PM",
-        "6:00–7:00 PM",
-      ];
-      const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-      let rooms = [
-        {
-          id: 1,
-          name: "CBEA 101",
-          type: "Lecture Room",
-          cap: 40,
-          floor: "Ground Floor",
-        },
-        {
-          id: 2,
-          name: "CBEA 102",
-          type: "Lecture Room",
-          cap: 40,
-          floor: "Ground Floor",
-        },
-        {
-          id: 3,
-          name: "CBEA 103",
-          type: "Lecture Room",
-          cap: 35,
-          floor: "Ground Floor",
-        },
-        {
-          id: 4,
-          name: "CBEA 104",
-          type: "Lecture Room",
-          cap: 35,
-          floor: "Ground Floor",
-        },
-        {
-          id: 5,
-          name: "CBEA 201",
-          type: "Lecture Room",
-          cap: 50,
-          floor: "2nd Floor",
-        },
-        {
-          id: 6,
-          name: "CBEA 202",
-          type: "Lecture Room",
-          cap: 50,
-          floor: "2nd Floor",
-        },
-        {
-          id: 7,
-          name: "Lab A",
-          type: "Computer Lab",
-          cap: 30,
-          floor: "Ground Floor",
-        },
-        {
-          id: 8,
-          name: "Lab B",
-          type: "Computer Lab",
-          cap: 30,
-          floor: "Ground Floor",
-        },
-      ];
-      let bookings = [
-        {
-          id: 1,
-          prof: "Prof. Reyes",
-          subj: "Business Finance",
-          sec: "BSA 2-A",
-          room: "CBEA 101",
-          day: "Mon",
-          time: "7:00–8:00 AM",
-          status: "approved",
-        },
-        {
-          id: 2,
-          prof: "Prof. Cruz",
-          subj: "Accounting 101",
-          sec: "BSA 1-B",
-          room: "CBEA 101",
-          day: "Mon",
-          time: "9:00–10:00 AM",
-          status: "approved",
-        },
-        {
-          id: 3,
-          prof: "Prof. Lim",
-          subj: "Macroeconomics",
-          sec: "BS Econ 3",
-          room: "CBEA 102",
-          day: "Tue",
-          time: "8:00–9:00 AM",
-          status: "approved",
-        },
-        {
-          id: 4,
-          prof: "Prof. Santos",
-          subj: "Marketing Mgmt",
-          sec: "BSM 3-A",
-          room: "CBEA 103",
-          day: "Wed",
-          time: "1:00–2:00 PM",
-          status: "approved",
-        },
-        {
-          id: 5,
-          prof: "Prof. Dela Cruz",
-          subj: "Human Resources",
-          sec: "BSBA 4-A",
-          room: "CBEA 201",
-          day: "Thu",
-          time: "3:00–4:00 PM",
-          status: "approved",
-        },
-        {
-          id: 6,
-          prof: "Prof. Tan",
-          subj: "Quantitative Methods",
-          sec: "BSA 3-B",
-          room: "Lab A",
-          day: "Fri",
-          time: "10:00–11:00 AM",
-          status: "approved",
-        },
-        {
-          id: 7,
-          prof: "Prof. Garcia",
-          subj: "Microeconomics",
-          sec: "BS Econ 2",
-          room: "CBEA 102",
-          day: "Mon",
-          time: "2:00–3:00 PM",
-          status: "pending",
-        },
-        {
-          id: 8,
-          prof: "Prof. Flores",
-          subj: "Business Law",
-          sec: "BSBA 2-B",
-          room: "CBEA 104",
-          day: "Sat",
-          time: "8:00–9:00 AM",
-          status: "pending",
-        },
-      ];
-      let editRoomId = null,
-        editBookingId = null;
-      let facRequests = [];
-
-      // ── THEME ──
-      function toggleTheme() {
-        const h = document.documentElement;
-        h.setAttribute(
-          "data-theme",
-          h.getAttribute("data-theme") === "dark" ? "light" : "dark",
-        );
-      }
-
-      // ── SCREENS ──
-      let pendingRole = "";
-      function goScreen(id) {
-        document
-          .querySelectorAll(".screen")
-          .forEach((s) => s.classList.remove("active"));
-        document.getElementById("screen-" + id).classList.add("active");
-      }
-      function goLogin(role) {
-        pendingRole = role;
-        const badge = document.getElementById("login-badge");
-        const hint = document.getElementById("l-hint");
-        if (role === "admin") {
-          badge.textContent = "Admin";
-          badge.className = "login-badge";
-          document.getElementById("login-title").textContent = "Admin Login";
-          document.getElementById("login-sub").textContent =
-            "Access the full scheduling dashboard.";
-          hint.textContent = "Hint: admin / admin123";
-        } else {
-          badge.textContent = "Faculty";
-          badge.className = "login-badge faculty";
-          document.getElementById("login-title").textContent = "Faculty Login";
-          document.getElementById("login-sub").textContent =
-            "View schedules and submit requests.";
-          hint.textContent = "Hint: faculty / cbea2024";
-        }
-        document.getElementById("l-user").value = "";
-        document.getElementById("l-pass").value = "";
-        document.getElementById("l-err").style.display = "none";
-        goScreen("login");
-      }
-      function doLogin() {
-        const u = document.getElementById("l-user").value.trim();
-        const p = document.getElementById("l-pass").value;
-        const err = document.getElementById("l-err");
-        if (pendingRole === "admin" && u === "admin" && p === "admin123") {
-          initAdmin();
-          goScreen("admin");
-        } else if (
-          pendingRole === "faculty" &&
-          u === "faculty" &&
-          p === "cbea2024"
-        ) {
-          initFaculty();
-          goScreen("faculty");
-        } else {
-          err.style.display = "block";
-        }
-      }
-
-      // ── ADMIN ──
-      function showAdminPg(id, el) {
-        document
-          .querySelectorAll(".pg")
-          .forEach((p) => p.classList.remove("active"));
-        document
-          .querySelectorAll(".a-nav")
-          .forEach((n) => n.classList.remove("active"));
-        document.getElementById("apg-" + id).classList.add("active");
-        if (el) el.classList.add("active");
-        if (id === "schedule") renderAdminSched();
-        if (id === "rooms") renderRoomsTbl();
-        if (id === "bookings") renderBookingsTbl();
-        if (id === "requests") renderReqList();
-        if (id === "dashboard") renderDashboard();
-      }
-      function initAdmin() {
-        populateRoomSelects();
-        populateTimeSelects();
-        renderDashboard();
-        updateBadge();
-      }
-      function populateRoomSelects() {
-        const rNames = rooms.map((r) => r.name);
-        ["a-room-filter", "bk-room"].forEach((id) => {
-          const s = document.getElementById(id);
-          if (!s) return;
-          const first = id.includes("filter")
-            ? '<option value="">All Rooms</option>'
-            : '<option value="">Select room</option>';
-          s.innerHTML =
-            first + rNames.map((n) => `<option>${n}</option>`).join("");
-        });
-      }
-      function populateTimeSelects() {
-        ["bk-time"].forEach((id) => {
-          const s = document.getElementById(id);
-          if (!s) return;
-          s.innerHTML =
-            '<option value="">Select time</option>' +
-            TIMES.map((t) => `<option>${t}</option>`).join("");
-        });
-      }
-      function updateBadge() {
-        const n = bookings.filter((b) => b.status === "pending").length;
-        const b = document.getElementById("req-badge");
-        b.textContent = n;
-        b.style.display = n > 0 ? "inline" : "none";
-      }
-      function renderDashboard() {
-        const approved = bookings.filter((b) => b.status === "approved");
-        const pending = bookings.filter((b) => b.status === "pending");
-        document.getElementById("ds-rooms").textContent = rooms.length;
-        document.getElementById("ds-approved").textContent = approved.length;
-        document.getElementById("ds-pending").textContent = pending.length;
-        document.getElementById("ds-used").textContent = [
-          ...new Set(approved.map((b) => b.room)),
-        ].length;
-        const all = [
-          ...pending,
-          ...bookings.filter((b) => b.status === "approved"),
-        ].slice(0, 6);
-        document.getElementById("dash-req-list").innerHTML = all.length
-          ? all
-              .map(
-                (b) => `
-    <tr><td>${b.prof}</td><td>${b.subj}</td><td>${b.room}</td><td>${b.day} · ${b.time}</td>
-    <td><span class="tag ${b.status === "approved" ? "green" : b.status === "pending" ? "amber" : "red"}"><span class="dot"></span>${b.status}</span></td>
-    <td><div class="acts">${b.status === "pending" ? `<button class="btn-a approve" onclick="approveB(${b.id})">Approve</button><button class="btn-a reject" onclick="rejectB(${b.id})">Reject</button>` : ""}</div></td></tr>`,
-              )
-              .join("")
-          : `<tr><td colspan="6" class="empty">No bookings yet.</td></tr>`;
-      }
-      function renderAdminSched() {
-        const rf = document.getElementById("a-room-filter").value;
-        const head = document.getElementById("a-sched-head");
-        const body = document.getElementById("a-sched-body");
-        head.innerHTML =
-          `<th>Time</th>` + DAYS.map((d) => `<th>${d}</th>`).join("");
-        body.innerHTML = "";
-        TIMES.forEach((t) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td><div class="t-cell">${t}</div></td>`;
-          DAYS.forEach((d) => {
-            const bks = bookings.filter(
-              (b) =>
-                b.time === t &&
-                b.day === d &&
-                (!rf || b.room === rf) &&
-                b.status !== "rejected",
-            );
-            const td = document.createElement("td");
-            if (!bks.length) {
-              td.innerHTML = `<div class="slot-empty"></div>`;
-            } else {
-              bks.forEach((b) => {
-                const div = document.createElement("div");
-                div.className =
-                  "slot-booked" + (b.status === "pending" ? " pending" : "");
-                div.innerHTML = `<div class="slot-s">${b.subj}</div><div class="slot-p">${b.prof} · ${b.room}</div>`;
-                td.appendChild(div);
-              });
-            }
-            tr.appendChild(td);
-          });
-          body.appendChild(tr);
-        });
-      }
-      function renderRoomsTbl() {
-        document.getElementById("rooms-tbl").innerHTML = rooms
-          .map((r) => {
-            const hasBookings = bookings.some(
-              (b) => b.room === r.name && b.status === "approved",
-            );
-            return `<tr><td><strong>${r.name}</strong></td><td>${r.type}</td><td>${r.cap}</td>
-    <td><span class="tag ${hasBookings ? "amber" : "green"}"><span class="dot"></span>${hasBookings ? "Has bookings" : "Available"}</span></td>
-    <td><div class="acts"><button class="btn-a edit" onclick="openRoomModal(${r.id})">Edit</button><button class="btn-a del" onclick="deleteRoom(${r.id})">Delete</button></div></td></tr>`;
-          })
-          .join("");
-      }
-      function renderBookingsTbl() {
-        const approved = bookings.filter((b) => b.status === "approved");
-        document.getElementById("bookings-tbl").innerHTML = approved.length
-          ? approved
-              .map(
-                (b) => `
-    <tr><td>${b.prof}</td><td>${b.subj}</td><td>${b.room}</td><td>${b.day}</td><td>${b.time}</td><td>${b.sec}</td>
-    <td><div class="acts"><button class="btn-a edit" onclick="openBookingModal(${b.id})">Edit</button><button class="btn-a del" onclick="deleteBooking(${b.id})">Delete</button></div></td></tr>`,
-              )
-              .join("")
-          : `<tr><td colspan="7" class="empty">No approved bookings.</td></tr>`;
-      }
-      function renderReqList() {
-        const pending = bookings.filter((b) => b.status === "pending");
-        const others = bookings.filter((b) => b.status !== "pending");
-        const all = [...pending, ...others];
-        document.getElementById("req-list-wrap").innerHTML =
-          `<div class="card"><div class="tbl-wrap"><table><thead><tr><th>Faculty</th><th>Subject</th><th>Room</th><th>Day & Time</th><th>Status</th><th>Actions</th></tr></thead><tbody>` +
-          (all.length
-            ? all
-                .map(
-                  (
-                    b,
-                  ) => `<tr><td>${b.prof}</td><td>${b.subj}</td><td>${b.room}</td><td>${b.day} · ${b.time}</td>
-  <td><span class="tag ${b.status === "approved" ? "green" : b.status === "pending" ? "amber" : "red"}"><span class="dot"></span>${b.status}</span></td>
-  <td><div class="acts">${b.status === "pending" ? `<button class="btn-a approve" onclick="approveB(${b.id})">Approve</button><button class="btn-a reject" onclick="rejectB(${b.id})">Reject</button>` : ""}</div></td></tr>`,
-                )
-                .join("")
-            : `<tr><td colspan="6" class="empty">No requests.</td></tr>`) +
-          `</tbody></table></div></div>`;
-      }
-      function approveB(id) {
-        const b = bookings.find((x) => x.id === id);
-        if (b) {
-          b.status = "approved";
-          toast("Request approved.");
-          updateBadge();
-          renderDashboard();
-          renderReqList();
-        }
-      }
-      function rejectB(id) {
-        const b = bookings.find((x) => x.id === id);
-        if (b) {
-          b.status = "rejected";
-          toast("Request rejected.");
-          updateBadge();
-          renderDashboard();
-          renderReqList();
-        }
-      }
-
-      // ROOM CRUD
-      function openRoomModal(id = null) {
-        editRoomId = id;
-        const r = id ? rooms.find((x) => x.id === id) : null;
-        document.getElementById("rm-modal-title").textContent = id
-          ? "Edit Room"
-          : "Add Room";
-        document.getElementById("rm-name").value = r ? r.name : "";
-        document.getElementById("rm-type").value = r ? r.type : "Lecture Room";
-        document.getElementById("rm-cap").value = r ? r.cap : "";
-        document.getElementById("rm-floor").value = r ? r.floor : "";
-        openModal("room-modal");
-      }
-      function saveRoom() {
-        const name = document.getElementById("rm-name").value.trim();
-        const type = document.getElementById("rm-type").value;
-        const cap = parseInt(document.getElementById("rm-cap").value) || 0;
-        const floor = document.getElementById("rm-floor").value.trim();
-        if (!name) {
-          toast("Room name required.");
-          return;
-        }
-        if (editRoomId) {
-          const r = rooms.find((x) => x.id === editRoomId);
-          if (r) {
-            r.name = name;
-            r.type = type;
-            r.cap = cap;
-            r.floor = floor;
-          }
-        } else {
-          rooms.push({ id: Date.now(), name, type, cap, floor });
-        }
-        closeModal("room-modal");
-        populateRoomSelects();
-        renderRoomsTbl();
-        toast(editRoomId ? "Room updated." : "Room added.");
-        editRoomId = null;
-      }
-      function deleteRoom(id) {
-        if (!confirm("Delete this room?")) return;
-        rooms = rooms.filter((r) => r.id !== id);
-        renderRoomsTbl();
-        toast("Room deleted.");
-      }
-
-      // BOOKING CRUD
-      function openBookingModal(id = null) {
-        editBookingId = id;
-        populateRoomSelects();
-        populateTimeSelects();
-        const b = id ? bookings.find((x) => x.id === id) : null;
-        document.getElementById("bk-modal-title").textContent = id
-          ? "Edit Booking"
-          : "Add Booking";
-        document.getElementById("bk-prof").value = b ? b.prof : "";
-        document.getElementById("bk-subj").value = b ? b.subj : "";
-        document.getElementById("bk-sec").value = b ? b.sec : "";
-        document.getElementById("bk-room").value = b ? b.room : "";
-        document.getElementById("bk-day").value = b ? b.day : "";
-        document.getElementById("bk-time").value = b ? b.time : "";
-        openModal("booking-modal");
-      }
-      function saveBooking() {
-        const prof = document.getElementById("bk-prof").value.trim();
-        const subj = document.getElementById("bk-subj").value.trim();
-        const sec = document.getElementById("bk-sec").value.trim();
-        const room = document.getElementById("bk-room").value;
-        const day = document.getElementById("bk-day").value;
-        const time = document.getElementById("bk-time").value;
-        if (!prof || !subj || !room || !day || !time) {
-          toast("Please fill all fields.");
-          return;
-        }
-        const conflict = bookings.find(
-          (b) =>
-            b.room === room &&
-            b.day === day &&
-            b.time === time &&
-            b.status === "approved" &&
-            b.id !== editBookingId,
-        );
-        if (conflict) {
-          toast("⚠ Room conflict detected.");
-          return;
-        }
-        if (editBookingId) {
-          const b = bookings.find((x) => x.id === editBookingId);
-          if (b) {
-            Object.assign(b, { prof, subj, sec, room, day, time });
-          }
-        } else {
-          bookings.push({
-            id: Date.now(),
-            prof,
-            subj,
-            sec,
-            room,
-            day,
-            time,
-            status: "approved",
-          });
-        }
-        closeModal("booking-modal");
-        renderBookingsTbl();
-        renderDashboard();
-        toast(editBookingId ? "Booking updated." : "Booking added.");
-        editBookingId = null;
-      }
-      function deleteBooking(id) {
-        if (!confirm("Delete this booking?")) return;
-        bookings = bookings.filter((b) => b.id !== id);
-        renderBookingsTbl();
-        renderDashboard();
-        toast("Booking deleted.");
-      }
-
-      // ── FACULTY ──
-      function initFaculty() {
-        // populate room selects
-        const rNames = rooms.map((r) => r.name);
-        ["f-room-filter", "f-room"].forEach((id) => {
-          const s = document.getElementById(id);
-          if (!s) return;
-          const first = id.includes("filter")
-            ? '<option value="">All Rooms</option>'
-            : '<option value="">Select room</option>';
-          s.innerHTML =
-            first + rNames.map((n) => `<option>${n}</option>`).join("");
-        });
-        // populate time select
-        const ft = document.getElementById("f-time");
-        ft.innerHTML =
-          '<option value="">Select time</option>' +
-          TIMES.map((t) => `<option>${t}</option>`).join("");
-        renderFacSched();
-        renderFacRooms();
-        renderMyRequests();
-      }
-      function showFacPg(id, el) {
-        document
-          .querySelectorAll(".fac-pg")
-          .forEach((p) => p.classList.remove("active"));
-        document
-          .querySelectorAll(".tab-btn")
-          .forEach((b) => b.classList.remove("active"));
-        document.getElementById(id).classList.add("active");
-        if (el) el.classList.add("active");
-        if (id === "fac-rooms") renderFacRooms();
-        if (id === "fac-myrequests") renderMyRequests();
-        if (id === "fac-schedule") renderFacSched();
-      }
-      function renderFacSched() {
-        const rf = document.getElementById("f-room-filter").value;
-        const head = document.getElementById("f-sched-head");
-        const body = document.getElementById("f-sched-body");
-        head.innerHTML =
-          `<th style="width:80px">Time</th>` +
-          DAYS.map((d) => `<th>${d}</th>`).join("");
-        body.innerHTML = "";
-        TIMES.forEach((t) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td style="background:var(--surface2);font-size:10px;color:var(--text3);font-weight:600;padding:0 8px;text-align:right;white-space:nowrap">${t}</td>`;
-          DAYS.forEach((d) => {
-            const bks = bookings.filter(
-              (b) =>
-                b.time === t &&
-                b.day === d &&
-                (!rf || b.room === rf) &&
-                b.status === "approved",
-            );
-            const td = document.createElement("td");
-            if (!bks.length) {
-              td.innerHTML = "";
-            } else {
-              bks.forEach((b) => {
-                const div = document.createElement("div");
-                div.className = "mini-slot booked";
-                div.innerHTML = `<div class="mini-s">${b.subj}</div><div class="mini-p">${b.room}</div>`;
-                td.appendChild(div);
-              });
-            }
-            tr.appendChild(td);
-          });
-          body.appendChild(tr);
-        });
-      }
-      function renderFacRooms() {
-        const g = document.getElementById("fac-rooms-g");
-        g.innerHTML = rooms
-          .map((r) => {
-            const total = TIMES.length * DAYS.length;
-            const used = bookings.filter(
-              (b) => b.room === r.name && b.status === "approved",
-            ).length;
-            const pct = Math.round((used / total) * 100);
-            return `<div class="room-c">
-      <div class="room-n">${r.name}</div>
-      <div class="room-t">${r.type} · Cap. ${r.cap}</div>
-      <div class="occ-bar"><div class="occ-fill${pct > 70 ? " full" : ""}" style="width:${pct}%"></div></div>
-      <span class="tag ${used > 0 ? "amber" : "green"}" style="font-size:10px"><span class="dot"></span>${used > 0 ? `${used} booked` : "Free"}</span>
-    </div>`;
-          })
-          .join("");
-      }
-      function toggleChangeFields() {
-        const v = document.getElementById("f-reqtype").value;
-        document.getElementById("change-field").style.display =
-          v === "change" ? "flex" : "none";
-      }
-      function checkConflict() {
-        const room = document.getElementById("f-room").value;
-        const day = document.getElementById("f-day").value;
-        const time = document.getElementById("f-time").value;
-        const warn = document.getElementById("conflict-warn");
-        if (room && day && time) {
-          const conflict = bookings.find(
-            (b) =>
-              b.room === room &&
-              b.day === day &&
-              b.time === time &&
-              b.status === "approved",
-          );
-          warn.style.display = conflict ? "block" : "none";
-        }
-      }
-      ["f-room", "f-day", "f-time"].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener("change", checkConflict);
-      });
-      function submitFacRequest() {
-        const name = document.getElementById("f-name").value.trim();
-        const subj = document.getElementById("f-subj").value.trim();
-        const sec = document.getElementById("f-sec").value.trim();
-        const reqtype = document.getElementById("f-reqtype").value;
-        const room = document.getElementById("f-room").value;
-        const day = document.getElementById("f-day").value;
-        const time = document.getElementById("f-time").value;
-        const reason = document.getElementById("f-reason").value.trim();
-        const notes = document.getElementById("f-notes").value.trim();
-        if (!name || !subj || !sec || !room || !day || !time) {
-          toast("Please fill in all required fields.");
-          return;
-        }
-        const conflict = bookings.find(
-          (b) =>
-            b.room === room &&
-            b.day === day &&
-            b.time === time &&
-            b.status === "approved",
-        );
-        if (conflict && reqtype === "new") {
-          toast("⚠ Room already booked. Choose another slot.");
-          return;
-        }
-        const entry = {
-          id: Date.now(),
-          prof: name,
-          subj,
-          sec,
-          room,
-          day,
-          time,
-          status: "pending",
-          reqtype,
-          reason,
-          notes,
-        };
-        bookings.push(entry);
-        facRequests.push(entry);
-        updateBadge();
-        ["f-name", "f-subj", "f-sec", "f-reason", "f-notes"].forEach((id) => {
-          const e = document.getElementById(id);
-          if (e) e.value = "";
-        });
-        ["f-room", "f-day", "f-time", "f-reqtype"].forEach((id) => {
-          const e = document.getElementById(id);
-          if (e) e.selectedIndex = 0;
-        });
-        document.getElementById("conflict-warn").style.display = "none";
-        toast("Request submitted. Awaiting admin approval.");
-        renderMyRequests();
-      }
-      function renderMyRequests() {
-        const list = document.getElementById("my-reqs-list");
-        if (!facRequests.length) {
-          list.innerHTML =
-            '<div class="empty">No requests submitted yet.</div>';
-          return;
-        }
-        const updated = facRequests.map(
-          (r) => bookings.find((b) => b.id === r.id) || r,
-        );
-        list.innerHTML = updated
-          .map(
-            (r) => `
-    <div class="my-req">
-      <div class="req-top">
-        <div class="req-subj">${r.subj}</div>
-        <span class="tag ${r.status === "approved" ? "green" : r.status === "pending" ? "amber" : "red"}"><span class="dot"></span>${r.status}</span>
+    <!-- ══ LANDING ══ -->
+    <div class="screen active" id="screen-landing">
+      <nav class="top-nav">
+        <div class="nav-brand">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <img
+              src="img/logo_mmsu1.jpg"
+              style="
+                width: 28px;
+                height: 28px;
+                object-fit: contain;
+                border-radius: 50%;
+                background: #fff;
+                padding: 1px;
+              "
+              alt="MMSU"
+            />
+            <div class="nav-logo" style="background: #fff; padding: 2px">
+              <img
+                src="img/logo_cbea2.jpg"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: contain;
+                  border-radius: inherit;
+                "
+                alt="CBEA"
+              />
+            </div>
+          </div>
+          <span class="nav-title">ACROSS</span>
+          <span class="nav-sub">CBEA</span>
+        </div>
+        <div class="nav-r">
+          <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
+          <button class="btn-primary" onclick="goScreen('login')">Admin</button>
+        </div>
+      </nav>
+      <div class="land-hero">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+          "
+        >
+          <img
+            src="img/logo_mmsu1.jpg"
+            style="
+              width: 76px;
+              height: 76px;
+              object-fit: contain;
+              filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.3));
+            "
+            alt="MMSU"
+          />
+          <div
+            class="logo-big"
+            style="background: #fff; padding: 4px; margin: 0"
+          >
+            <img
+              src="img/logo_cbea2.jpg"
+              style="
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                border-radius: inherit;
+              "
+              alt="CBEA"
+            />
+          </div>
+        </div>
+        <h1 style="color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25)">
+          ACROSS — CBEA
+        </h1>
+        <p class="tagline" style="color: rgba(255, 255, 255, 0.92)">
+          Academic ClassRoom Occupancy Scheduling System
+        </p>
+        <p class="college" style="color: rgba(255, 255, 255, 0.75)">
+          College of Business Economics and Accountancy
+        </p>
+        <div class="land-actions">
+          <button class="btn-primary" onclick="smoothScrollTo('sched-anchor')">
+            View Schedule
+          </button>
+          <button
+            class="btn-outline-green"
+            onclick="smoothScrollTo('req-anchor')"
+          >
+            Request a Room
+          </button>
+        </div>
       </div>
-      <div class="req-det">${r.prof} · ${r.sec} · ${r.room} · ${r.day} ${r.time}</div>
-      ${r.reqtype === "change" && r.reason ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">Reason: ${r.reason}</div>` : ""}
-    </div>`,
-          )
-          .join("");
-      }
+      <div class="land-body">
+        <div class="vacant-toggle">
+          <h2>Vacant Rooms</h2>
+          <button
+            class="toggle-pill"
+            onclick="toggleVacant(this)"
+            id="vacant-pill"
+          >
+            <span class="dot"></span> Show Vacant Rooms
+          </button>
+        </div>
+        <div class="vacant-section" id="vacant-section">
+          <div class="vacant-filters">
+            <input
+              class="vacant-search"
+              type="text"
+              id="vacant-search"
+              placeholder="Search room name..."
+              oninput="renderVacantGrid()"
+            />
+            <button
+              class="vacant-filter-btn active"
+              data-type=""
+              onclick="setVacantType('', this)"
+            >
+              All Types
+            </button>
+            <button
+              class="vacant-filter-btn"
+              data-type="Lecture Room"
+              onclick="setVacantType('Lecture Room', this)"
+            >
+              Lecture
+            </button>
+            <button
+              class="vacant-filter-btn"
+              data-type="Computer Lab"
+              onclick="setVacantType('Computer Lab', this)"
+            >
+              Computer Lab
+            </button>
+            <button
+              class="vacant-filter-btn"
+              data-type="Conference Room"
+              onclick="setVacantType('Conference Room', this)"
+            >
+              Conference
+            </button>
+            <button
+              class="vacant-filter-btn"
+              data-type="Function Hall"
+              onclick="setVacantType('Function Hall', this)"
+            >
+              Function Hall
+            </button>
+          </div>
+          <div class="vacant-filters" style="margin-top: -4px">
+            <button
+              class="vacant-filter-btn active"
+              data-avail="all"
+              onclick="setVacantAvail('all', this)"
+            >
+              All
+            </button>
+            <button
+              class="vacant-filter-btn"
+              data-avail="vacant"
+              onclick="setVacantAvail('vacant', this)"
+            >
+              Fully Vacant
+            </button>
+            <button
+              class="vacant-filter-btn"
+              data-avail="reserved"
+              onclick="setVacantAvail('reserved', this)"
+            >
+              Has Reservations
+            </button>
+            <select
+              id="vacant-floor-filter"
+              onchange="renderVacantGrid()"
+              style="
+                font-size: 12px;
+                padding: 5px 10px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                color: var(--text);
+                border-radius: 20px;
+                outline: none;
+                cursor: pointer;
+              "
+            >
+              <option value="">All Locations</option>
+            </select>
+          </div>
+          <div class="vacant-count" id="vacant-count"></div>
+          <div class="vacant-grid" id="vacant-grid"></div>
+        </div>
 
-      // ── MODALS ──
-      function openModal(id) {
-        document.getElementById(id).classList.add("open");
-      }
-      function closeModal(id) {
-        document.getElementById(id).classList.remove("open");
-      }
+        <div class="land-sched-wrap" id="sched-anchor">
+          <div class="land-sched-hd">
+            <h3>Weekly Schedule</h3>
+            <select id="pub-room-f" onchange="renderPubSched()">
+              <option value="">All Rooms</option>
+            </select>
+          </div>
+          <div class="sched-wrap" style="padding: 0 14px 14px">
+            <table class="sched-table">
+              <thead>
+                <tr id="pub-sched-hd"></tr>
+              </thead>
+              <tbody id="pub-sched-bd"></tbody>
+            </table>
+          </div>
+        </div>
 
-      // ── TOAST ──
-      function toast(msg) {
-        const t = document.getElementById("toast");
-        t.textContent = msg;
-        t.classList.add("show");
-        setTimeout(() => t.classList.remove("show"), 3000);
-      }
-    </script>
+        <!-- REQUEST FORM -->
+        <div class="req-section" id="req-anchor">
+          <h2>Request a Room</h2>
+          <p class="sub">
+            Fill in the details below. The scheduling head will review and
+            approve your request.
+          </p>
+          <div class="form-grid">
+            <div class="fg">
+              <label class="lbl">Your Name</label
+              ><input
+                type="text"
+                id="pub-name"
+                placeholder="e.g. Prof. Santos"
+              />
+            </div>
+            <div class="fg">
+              <label class="lbl">Subject / Purpose</label
+              ><input
+                type="text"
+                id="pub-subj"
+                placeholder="e.g. Business Finance / Org Meeting"
+              />
+            </div>
+            <div class="fg">
+              <label class="lbl">Group / Section / Org</label
+              ><input
+                type="text"
+                id="pub-group"
+                placeholder="e.g. BSA 2-A, SSG, Finance Dept"
+              />
+            </div>
+            <div class="fg">
+              <label class="lbl"
+                >Email
+                <span
+                  style="
+                    font-weight: 400;
+                    text-transform: none;
+                    letter-spacing: 0;
+                    color: var(--t3);
+                  "
+                  >(optional — for status updates)</span
+                ></label
+              ><input
+                type="email"
+                id="pub-email"
+                placeholder="e.g. prof.santos@mmsu.edu.ph"
+              />
+            </div>
+            <div class="fg">
+              <label class="lbl">Request Type</label>
+              <select id="pub-reqtype" onchange="onReqTypeChange()">
+                <option value="new">New Schedule</option>
+                <option value="change">Change Existing Schedule</option>
+              </select>
+            </div>
+            <div class="fg" style="display: none" id="spacer-fg"></div>
+
+            <!-- NEW SCHEDULE: single room picker -->
+            <div class="fg full" id="new-sched-zone">
+              <label class="lbl">Preferred Room</label>
+              <select
+                id="pub-room"
+                onchange="onNewRoomChange()"
+                style="margin-top: 5px"
+              ></select>
+              <div
+                class="slot-selected-display"
+                id="new-slot-display"
+                style="display: none"
+              >
+                <span class="slot-display-icon">📍</span>
+                <span id="new-slot-text">No slot selected</span>
+                <button
+                  onclick="clearNewSlot()"
+                  style="
+                    background: none;
+                    border: none;
+                    color: var(--t3);
+                    cursor: pointer;
+                    font-size: 12px;
+                    margin-left: auto;
+                  "
+                >
+                  ✕ Clear
+                </button>
+              </div>
+              <div
+                class="alert info"
+                id="pub-room-info"
+                style="margin-top: 8px"
+              >
+                <span class="alert-icon">ℹ️</span
+                ><span
+                  >Select a room above — its schedule will open so you can pick
+                  a slot.</span
+                >
+              </div>
+            </div>
+
+            <!-- CHANGE SCHEDULE: From + To cards side by side -->
+            <div class="fg full" id="change-sched-zone" style="display: none">
+              <div class="from-to-grid">
+                <!-- FROM CARD -->
+                <div class="from-to-card from-card">
+                  <div class="ftc-header">
+                    <span class="ftc-badge from-badge">FROM</span
+                    ><span class="ftc-title">Current Slot</span>
+                  </div>
+                  <label class="lbl" style="margin-bottom: 5px; display: block"
+                    >Current Room</label
+                  >
+                  <select
+                    id="pub-from-room"
+                    onchange="onFromRoomChange()"
+                    style="width: 100%; margin-bottom: 10px"
+                  ></select>
+                  <div
+                    class="slot-selected-display"
+                    id="from-slot-display"
+                    style="display: none"
+                  >
+                    <span class="slot-display-icon">📍</span>
+                    <span id="from-slot-text">No slot selected</span>
+                    <button
+                      onclick="clearFromSlot()"
+                      style="
+                        background: none;
+                        border: none;
+                        color: var(--t3);
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-left: auto;
+                      "
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div
+                    id="from-room-hint"
+                    style="
+                      font-size: 11px;
+                      color: var(--t3);
+                      font-style: italic;
+                    "
+                  >
+                    Select a room to view its schedule
+                  </div>
+                </div>
+                <!-- TO CARD -->
+                <div class="from-to-card to-card">
+                  <div class="ftc-header">
+                    <span class="ftc-badge to-badge">TO</span
+                    ><span class="ftc-title">New Slot</span>
+                  </div>
+                  <label class="lbl" style="margin-bottom: 5px; display: block"
+                    >Destination Room</label
+                  >
+                  <select
+                    id="pub-to-room"
+                    onchange="onToRoomChange()"
+                    style="width: 100%; margin-bottom: 10px"
+                  ></select>
+                  <div
+                    class="slot-selected-display"
+                    id="to-slot-display"
+                    style="display: none"
+                  >
+                    <span class="slot-display-icon">📍</span>
+                    <span id="to-slot-text">No slot selected</span>
+                    <button
+                      onclick="clearToSlot()"
+                      style="
+                        background: none;
+                        border: none;
+                        color: var(--t3);
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-left: auto;
+                      "
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div
+                    id="to-room-hint"
+                    style="
+                      font-size: 11px;
+                      color: var(--t3);
+                      font-style: italic;
+                    "
+                  >
+                    Select a room to view its schedule
+                  </div>
+                </div>
+              </div>
+              <!-- Change summary -->
+              <div
+                class="change-summary"
+                id="change-summary"
+                style="margin-top: 12px"
+              >
+                <div class="cs-row" style="background: var(--rl)">
+                  <span class="cs-lbl from">From</span
+                  ><span class="cs-val" id="cs-from">—</span>
+                </div>
+                <div class="cs-row" style="background: var(--gl)">
+                  <span class="cs-lbl to">To</span
+                  ><span class="cs-val" id="cs-to">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hidden day/time (auto-filled) -->
+            <input type="hidden" id="pub-day" />
+            <input type="hidden" id="pub-time" />
+            <div class="fg full">
+              <label class="lbl">Notes (optional)</label
+              ><textarea
+                id="pub-notes"
+                placeholder="Any additional info or special requests..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="alert danger" id="pub-conflict" style="margin-top: 12px">
+            <span class="alert-icon">🚫</span
+            ><span id="pub-conflict-msg"></span>
+          </div>
+          <div class="alert caution" id="pub-warn" style="margin-top: 12px">
+            <span class="alert-icon">⚠️</span><span id="pub-warn-msg"></span>
+          </div>
+          <div
+            style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap"
+          >
+            <button class="btn-save" onclick="submitPubRequest()">
+              Submit Request
+            </button>
+          </div>
+          <p style="font-size: 11px; color: var(--t3); margin-top: 10px">
+            Your request is reviewed by the scheduling head before it appears on
+            the schedule.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE POPUP MODAL (shared for new/from/to) -->
+    <div class="modal-ov" id="sched-picker-modal">
+      <div class="modal" style="max-width: 680px; padding: 0; overflow: hidden">
+        <div
+          class="modal-hd"
+          style="
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--s2);
+          "
+        >
+          <div>
+            <h2 id="sched-picker-title" style="font-size: 16px">
+              Select a Time Slot
+            </h2>
+            <p
+              id="sched-picker-sub"
+              style="font-size: 12px; color: var(--t2); margin-top: 2px"
+            >
+              Click a vacant slot to select it.
+            </p>
+          </div>
+          <button class="modal-x" onclick="closeModal('sched-picker-modal')">
+            ×
+          </button>
+        </div>
+        <div style="padding: 0 16px 16px; overflow-x: auto">
+          <table class="rmc-table" style="margin-top: 12px">
+            <thead>
+              <tr id="picker-hd"></tr>
+            </thead>
+            <tbody id="picker-bd"></tbody>
+          </table>
+        </div>
+        <div
+          style="
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            color: var(--t2);
+            background: var(--s2);
+          "
+        >
+          <span style="display: flex; align-items: center; gap: 5px"
+            ><span
+              style="
+                width: 11px;
+                height: 11px;
+                border-radius: 2px;
+                background: #e8f8f0;
+                border: 1px solid #2a9a5a;
+                display: inline-block;
+              "
+            ></span
+            >Vacant — click to select</span
+          >
+          <span style="display: flex; align-items: center; gap: 5px"
+            ><span
+              style="
+                width: 11px;
+                height: 11px;
+                border-radius: 2px;
+                background: #fee8e8;
+                border: 1px solid #d04040;
+                display: inline-block;
+              "
+            ></span
+            >Reserved</span
+          >
+          <span style="display: flex; align-items: center; gap: 5px"
+            ><span
+              style="
+                width: 11px;
+                height: 11px;
+                border-radius: 2px;
+                background: #f47920;
+                display: inline-block;
+              "
+            ></span
+            >Selected</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LOGIN ══ -->
+    <div class="screen" id="screen-login">
+      <button class="back-link" onclick="goScreen('landing')">← Back</button>
+      <div class="login-box">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+          "
+        >
+          <img
+            src="img/logo_mmsu1.jpg"
+            style="width: 46px; height: 46px; object-fit: contain"
+            alt="MMSU"
+          />
+          <div
+            class="login-logo"
+            style="background: #fff; padding: 3px; margin: 0"
+          >
+            <img
+              src="img/logo_cbea2.jpg"
+              style="
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                border-radius: inherit;
+              "
+              alt="CBEA"
+            />
+          </div>
+        </div>
+        <h2 style="color: #fff">Admin Login</h2>
+        <p class="sub" style="color: rgba(255, 255, 255, 0.8)">
+          Scheduling Head access only.
+        </p>
+        <div class="fg" style="margin-bottom: 12px">
+          <label class="lbl" style="color: rgba(255, 255, 255, 0.85)"
+            >Username</label
+          ><input type="text" id="l-user" placeholder="admin" />
+        </div>
+        <div class="fg">
+          <label class="lbl" style="color: rgba(255, 255, 255, 0.85)"
+            >Password</label
+          ><input
+            type="password"
+            id="l-pass"
+            placeholder="••••••••"
+            onkeydown="if (event.key === 'Enter') doLogin();"
+          />
+        </div>
+        <div class="alert danger" id="l-err" style="margin-top: 8px">
+          <span class="alert-icon">🚫</span>Incorrect credentials.
+        </div>
+        <button
+          class="btn-save"
+          style="width: 100%; margin-top: 14px"
+          onclick="doLogin()"
+        >
+          Login
+        </button>
+        <p
+          style="
+            font-size: 11px;
+            color: var(--t3);
+            text-align: center;
+            margin-top: 10px;
+          "
+        >
+          Hint: admin / admin123
+        </p>
+      </div>
+    </div>
+
+    <!-- ══ ADMIN ══ -->
+    <div class="screen" id="screen-admin">
+      <nav class="top-nav">
+        <div class="nav-brand">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <img
+              src="img/logo_mmsu1.jpg"
+              style="
+                width: 28px;
+                height: 28px;
+                object-fit: contain;
+                border-radius: 50%;
+                background: #fff;
+                padding: 1px;
+              "
+              alt="MMSU"
+            />
+            <div class="nav-logo" style="background: #fff; padding: 2px">
+              <img
+                src="img/logo_cbea2.jpg"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: contain;
+                  border-radius: inherit;
+                "
+                alt="CBEA"
+              />
+            </div>
+          </div>
+          <span class="nav-title">ACROSS</span
+          ><span class="nav-sub">Admin</span>
+        </div>
+        <div class="nav-r">
+          <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
+          <button class="btn-ghost" onclick="goScreen('landing')">
+            ← Public View
+          </button>
+          <button class="btn-ghost" onclick="goScreen('landing')">
+            Logout
+          </button>
+        </div>
+      </nav>
+      <div class="admin-body">
+        <aside class="admin-aside">
+          <div class="aside-lbl">Overview</div>
+          <button class="a-btn active" onclick="showAdminPg('dashboard', this)">
+            📊 Dashboard
+          </button>
+          <button class="a-btn" onclick="showAdminPg('schedule', this)">
+            📅 Schedule
+          </button>
+          <div class="aside-lbl">Management</div>
+          <button class="a-btn" onclick="showAdminPg('rooms', this)">
+            🏫 Rooms
+          </button>
+          <button class="a-btn" onclick="showAdminPg('reservations', this)">
+            📋 Reservations
+          </button>
+          <button class="a-btn" onclick="showAdminPg('requests', this)">
+            📨 Requests <span class="badge" id="req-badge"></span>
+          </button>
+          <div class="aside-lbl">Tools</div>
+          <button
+            class="a-btn"
+            onclick="
+              openModal('export-modal');
+              initExport();
+            "
+          >
+            📤 Export Data
+          </button>
+          <button
+            class="a-btn"
+            style="color: var(--red)"
+            onclick="openClearModal('reservations')"
+          >
+            🗑 Clear Reservations
+          </button>
+          <button
+            class="a-btn"
+            style="color: var(--red)"
+            onclick="openClearModal('rooms')"
+          >
+            🗑 Clear All Rooms
+          </button>
+        </aside>
+        <div class="admin-main">
+          <!-- DASHBOARD -->
+          <div class="pg active" id="apg-dashboard">
+            <div class="pg-hd">
+              <h1>Dashboard</h1>
+              <p>Overview of the CBEA scheduling system.</p>
+            </div>
+            <div class="stats">
+              <div class="stat hi">
+                <div class="stat-l">Total Rooms</div>
+                <div class="stat-v" id="ds-rooms">0</div>
+                <div class="stat-s">in database</div>
+              </div>
+              <div class="stat">
+                <div class="stat-l">Approved</div>
+                <div class="stat-v" id="ds-approved">0</div>
+                <div class="stat-s">reservations</div>
+              </div>
+              <div class="stat">
+                <div class="stat-l">Pending</div>
+                <div class="stat-v" id="ds-pending">0</div>
+                <div class="stat-s">awaiting review</div>
+              </div>
+              <div
+                class="stat clickable"
+                onclick="showVacantModal()"
+                title="Click to view vacant rooms"
+              >
+                <div class="stat-l">Vacant</div>
+                <div class="stat-v" id="ds-vacant">0</div>
+                <div class="stat-s">rooms free — click to view</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><h3>Pending Requests</h3></div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Purpose</th>
+                      <th>Room</th>
+                      <th>Day & Time</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-pending"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- SCHEDULE -->
+          <div class="pg" id="apg-schedule">
+            <div class="pg-hd">
+              <h1>Schedule</h1>
+              <p>Full weekly view.</p>
+            </div>
+            <div class="card">
+              <div class="card-hd">
+                <h3>Weekly Schedule</h3>
+                <select
+                  id="a-room-f"
+                  onchange="renderAdminSched()"
+                  style="font-size: 12px; padding: 5px 9px"
+                >
+                  <option value="">All Rooms</option>
+                </select>
+              </div>
+              <div class="sched-wrap">
+                <table class="sched-table">
+                  <thead>
+                    <tr id="a-sched-hd"></tr>
+                  </thead>
+                  <tbody id="a-sched-bd"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- ROOMS -->
+          <div class="pg" id="apg-rooms">
+            <div class="pg-hd">
+              <h1>Rooms</h1>
+              <p>Add and manage CBEA classrooms.</p>
+            </div>
+            <div class="card">
+              <div class="card-hd">
+                <h3>All Rooms</h3>
+                <button class="btn-save" onclick="openRoomModal()">
+                  + Add Room
+                </button>
+              </div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Room Name</th>
+                      <th>Type</th>
+                      <th>Capacity</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rooms-tbl"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- BOOKINGS -->
+          <div class="pg" id="apg-reservations">
+            <div class="pg-hd">
+              <h1>Reservations</h1>
+              <p>Manage approved schedule entries.</p>
+            </div>
+            <div class="card">
+              <div class="card-hd">
+                <h3>All Reservations</h3>
+                <button class="btn-save" onclick="openBookingModal()">
+                  + Add Reservation
+                </button>
+              </div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Subject</th>
+                      <th>Group</th>
+                      <th>Room</th>
+                      <th>Day</th>
+                      <th>Time</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reservations-tbl"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- REQUESTS -->
+          <div class="pg" id="apg-requests">
+            <div class="pg-hd">
+              <h1>Requests</h1>
+              <p>Sorted by action date. Pending requests appear first.</p>
+            </div>
+            <div class="card">
+              <div class="req-search-bar">
+                <input
+                  class="req-search-input"
+                  type="text"
+                  id="req-search"
+                  placeholder="Search by name, subject, group, room..."
+                  oninput="renderReqTbl()"
+                />
+                <button
+                  class="req-search-clear"
+                  onclick="clearReqSearch()"
+                  title="Clear search"
+                >
+                  ✕ Clear
+                </button>
+              </div>
+              <div class="req-result-count" id="req-result-count"></div>
+              <div class="card-hd" style="margin-bottom: 8px">
+                <h3>All Requests</h3>
+              </div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Subject</th>
+                      <th>Group</th>
+                      <th>Room</th>
+                      <th>Day & Time</th>
+                      <th>Notes</th>
+                      <th>Status</th>
+                      <th>Action Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="req-tbl"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACK TO TOP -->
+    <button
+      class="back-to-top"
+      id="back-to-top"
+      onclick="backToTop()"
+      title="Back to top"
+    >
+      ↑
+    </button>
+
+    <!-- EXPORT MODAL -->
+    <div class="modal-ov" id="export-modal">
+      <div class="modal" style="max-width: 600px">
+        <div class="modal-hd">
+          <h2>Export Data</h2>
+          <button class="modal-x" onclick="closeModal('export-modal')">
+            ×
+          </button>
+        </div>
+        <div
+          style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap"
+        >
+          <button
+            class="vacant-filter-btn active"
+            data-export="rooms"
+            onclick="setExportType('rooms', this)"
+          >
+            🏫 Rooms
+          </button>
+          <button
+            class="vacant-filter-btn"
+            data-export="all"
+            onclick="setExportType('all', this)"
+          >
+            📋 All Reservations
+          </button>
+          <button
+            class="vacant-filter-btn"
+            data-export="room-sched"
+            onclick="setExportType('room-sched', this)"
+          >
+            📅 Room Schedule
+          </button>
+        </div>
+        <div id="export-room-picker" style="display: none; margin-bottom: 12px">
+          <label class="lbl">Select Room</label>
+          <select
+            id="export-room-select"
+            onchange="renderExportPreview()"
+            style="margin-top: 6px"
+          >
+            <option value="">Choose a room...</option>
+          </select>
+        </div>
+        <div id="export-preview-wrap">
+          <p style="font-size: 12px; color: var(--t2); margin-bottom: 8px">
+            Preview
+          </p>
+          <div class="export-preview" id="export-preview">
+            <p style="color: var(--t3); font-size: 12px">
+              Select an export type above.
+            </p>
+          </div>
+        </div>
+        <div class="export-btn-row">
+          <button class="btn-save" onclick="doExport('xlsx')">
+            ⬇ Export as Excel (.xlsx)
+          </button>
+          <button class="btn-ghost" onclick="doExport('csv')">
+            ⬇ Export as CSV
+          </button>
+          <button class="btn-cancel" onclick="closeModal('export-modal')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLEAR CONFIRM MODAL -->
+    <div class="modal-ov" id="clear-modal">
+      <div class="modal" style="max-width: 420px">
+        <div class="modal-hd">
+          <h2 id="clear-modal-title">⚠️ Are you sure?</h2>
+          <button class="modal-x" onclick="closeModal('clear-modal')">×</button>
+        </div>
+        <div class="alert caution show" style="margin-bottom: 16px">
+          <span class="alert-icon">⚠️</span
+          ><span id="clear-modal-msg">This action cannot be undone.</span>
+        </div>
+        <p
+          style="font-size: 13px; color: var(--t2); margin-bottom: 20px"
+          id="clear-modal-sub"
+        ></p>
+        <div style="display: flex; gap: 10px">
+          <button class="btn-danger" id="clear-modal-confirm">
+            Yes, proceed
+          </button>
+          <button class="btn-cancel" onclick="closeModal('clear-modal')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VACANT ROOMS MODAL (dashboard click) -->
+    <div class="modal-ov" id="vacant-modal">
+      <div class="modal" style="max-width: 560px">
+        <div class="modal-hd">
+          <h2>Vacant Rooms</h2>
+          <button class="modal-x" onclick="closeModal('vacant-modal')">
+            ×
+          </button>
+        </div>
+        <div id="vacant-modal-list"></div>
+      </div>
+    </div>
+
+    <!-- SLOT OVERFLOW POPUP -->
+    <div class="slot-popup" id="slot-popup">
+      <div class="slot-popup-hd">
+        <h4 id="sp-title">All Reservations</h4>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span id="sp-count"></span>
+          <button class="slot-popup-x" onclick="closeSlotPopup()">×</button>
+        </div>
+      </div>
+      <div id="sp-list"></div>
+    </div>
+
+    <script src="js/main.js" defer></script>
   </body>
 </html>

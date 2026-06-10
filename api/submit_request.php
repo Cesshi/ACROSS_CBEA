@@ -1,6 +1,6 @@
 <?php
 // ============================================
-// Submit Room Request (Faculty)
+// Submit Room Request
 // api/submit_request.php
 // ============================================
 
