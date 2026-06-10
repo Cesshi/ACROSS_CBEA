@@ -1,0 +1,176 @@
+/* ============================================================
+   ACROSS-CBEA — Admin Dashboard Styles
+   ============================================================ */
+
+/* ── TOP NAV ── */
+.admin-topbar {
+  position: sticky; top: 0; z-index: 300;
+  height: 60px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-logos { display: flex; align-items: center; gap: 8px; }
+.topbar-logos img { height: 34px; width: 34px; object-fit: contain; }
+.topbar-logo-sep { width: 1px; height: 26px; background: var(--border2); opacity: 0.7; }
+.topbar-names { display: flex; flex-direction: column; }
+.topbar-appname { font-family: var(--font-head); font-size: 19px; color: var(--green); letter-spacing: -0.2px; line-height: 1.1; }
+.topbar-subtitle { font-size: 10px; color: var(--text3); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.user-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 14px;
+  font-size: 12px; font-weight: 600; color: var(--text2);
+}
+.user-status { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+/* ── LAYOUT ── */
+.admin-layout { display: flex; min-height: calc(100vh - 60px); }
+
+/* ── SIDEBAR ── */
+.admin-sidebar {
+  width: 64px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  position: sticky; top: 60px; height: calc(100vh - 60px);
+  overflow-y: auto; overflow-x: hidden;
+  transition: width 0.28s var(--ease);
+  flex-shrink: 0;
+  box-shadow: 2px 0 16px rgba(0,0,0,.04);
+}
+.admin-sidebar.expanded { width: 224px; align-items: stretch; }
+
+.sidebar-toggle {
+  width: 40px; height: 40px; border-radius: var(--r-sm);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text3); font-size: 17px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--dur) ease;
+  align-self: center; flex-shrink: 0;
+  margin-bottom: 8px;
+}
+.sidebar-toggle:hover { background: var(--green-l); color: var(--green); border-color: rgba(26,107,63,.25); }
+
+.sidebar-section-label {
+  display: none; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text4); padding: 12px 12px 4px;
+}
+.admin-sidebar.expanded .sidebar-section-label { display: block; }
+
+.nav-btn {
+  display: flex; align-items: center;
+  width: 40px; height: 40px;
+  border-radius: var(--r-sm);
+  background: none; border: none;
+  color: var(--text3); font-size: 18px;
+  justify-content: center;
+  transition: all 0.2s var(--ease);
+  position: relative; flex-shrink: 0;
+  align-self: center;
+}
+.admin-sidebar.expanded .nav-btn {
+  width: 100%; height: 42px;
+  padding: 0 12px;
+  justify-content: flex-start;
+  gap: 10px;
+  border-radius: var(--r-xs);
+  align-self: auto;
+}
+.nav-btn:hover:not(.active) {
+  background: var(--surface2);
+  color: var(--text);
+}
+.nav-btn.active {
+  background: var(--green-l);
+  color: var(--green);
+  border-left: 3px solid var(--green);
+}
+.admin-sidebar:not(.expanded) .nav-btn.active { border-left: none; background: var(--green); color: #fff; }
+.nav-btn-label {
+  display: none; font-size: 13px; font-weight: 500;
+  white-space: nowrap; overflow: hidden;
+}
+.admin-sidebar.expanded .nav-btn-label { display: block; }
+.nav-btn-badge {
+  background: var(--orange); color: #fff;
+  border-radius: 10px; padding: 2px 7px;
+  font-size: 10px; font-weight: 700; line-height: 1.4;
+  display: none; margin-left: auto;
+}
+.admin-sidebar.expanded .nav-btn-badge { display: block; }
+.nav-btn-badge.vis { display: block !important; }
+.admin-sidebar:not(.expanded) .nav-btn-badge.vis {
+  position: absolute; top: 4px; right: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  font-size: 9px; padding: 0;
+  display: flex !important; align-items: center; justify-content: center;
+}
+
+/* ── MAIN AREA ── */
+.admin-main {
+  flex: 1; min-width: 0;
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+/* ── PAGES ── */
+.admin-page { display: none; }
+.admin-page.active { display: block; }
+.admin-page.active { animation: pageIn 0.3s var(--ease) both; }
+
+.page-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+}
+.page-top-title h1 { font-size: 28px; letter-spacing: -0.4px; }
+.page-top-title p  { font-size: 13px; color: var(--text3); margin-top: 3px; }
+.page-top-actions  { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* ── DASHBOARD TWO-COL ── */
+.dash-two-col {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 22px;
+  margin-top: 0;
+}
+@media (max-width: 1100px) { .dash-two-col { grid-template-columns: 1fr; } }
+
+/* ── SETTINGS PAGE ── */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.settings-section { }
+.settings-section h3 { font-size: 16px; margin-bottom: 4px; }
+.settings-section p  { font-size: 12.5px; color: var(--text3); margin-bottom: 18px; }
+.smtp-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; border-radius: var(--r-sm);
+  font-size: 13px; font-weight: 600; margin-bottom: 16px;
+}
+.smtp-status.configured { background: var(--green-l); color: var(--green); }
+.smtp-status.not-configured { background: var(--orange-l); color: var(--orange-d); }
+
+/* ── LOG PAGE ── */
+.log-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.log-item:last-child { border-bottom: none; }
+.log-icon {
+  width: 34px; height: 34px; border-radius: var(--r-xs);
+  background: var(--green-l); color: var(--green);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.log-icon.reject { background: var(--red-l); color: var(--red); }
+.log-icon.edit    { background: var(--orange-l); color: var(--orange-d); }
+.log-action { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.log-desc   { font-size: 12px; color: var(--text3); }
+.log-time   { font-size: 11px; color: var(--text4); margin-left: auto; white-space: nowrap; }
