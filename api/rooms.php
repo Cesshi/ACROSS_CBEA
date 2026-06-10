@@ -30,7 +30,8 @@ if ($method === 'GET') {
 
 // Admin writes (session check relaxed for localhost dev)
 
-$body = json_decode(file_get_contents('php://input'), true) ?? [];
+$rawInput = file_get_contents('php://input');
+$body = json_decode($rawInput, true) ?? [];
 
 // ── POST — add room ───────────────────────────────────────
 if ($method === 'POST') {
@@ -113,7 +114,7 @@ if ($method === 'PUT') {
 
 // ── DELETE — delete room (or all) ─────────────────────────
 if ($method === 'DELETE') {
-    if (isset($_GET['all'])) {
+    if (isset($_GET['all']) || !empty($body['all'])) {
         $conn->query('DELETE FROM reservations');
         $conn->query('DELETE FROM rooms');
         echo json_encode(['success' => true]);

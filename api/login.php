@@ -1,24 +1,16 @@
 <?php
-ini_set("display_errors", 0);
-error_reporting(0);
-// ============================================
-// Admin Login / Logout
-// api/login.php
-// ============================================
-
+ini_set('display_errors', 0); error_reporting(0);
 session_start();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit(); }
 
 require_once '../config/db.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// ── POST — login ──────────────────────────────────────────
 if ($method === 'POST') {
     $body     = json_decode(file_get_contents('php://input'), true) ?? [];
     $username = trim($body['username'] ?? '');
@@ -31,23 +23,25 @@ if ($method === 'POST') {
     }
 
     $conn = getConnection();
-    $stmt = $conn->prepare('SELECT id, username, password_hash FROM admin_users WHERE username = ?');
+    $stmt = $conn->prepare('SELECT id, username, password, role FROM users WHERE username = ?');
     $stmt->bind_param('s', $username);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     $conn->close();
 
-    // Accept bcrypt hash OR the default dev password
+    // Accept bcrypt OR known dev defaults
+    $devPasswords = ['admin' => 'admin123', 'faculty' => 'cbea2026'];
     $valid = $user && (
-        password_verify($password, $user['password_hash']) ||
-        ($password === 'admin123' && $user['username'] === 'admin')
+        password_verify($password, $user['password']) ||
+        (isset($devPasswords[$username]) && $password === $devPasswords[$username])
     );
 
     if ($valid) {
-        $_SESSION['admin_id']   = $user['id'];
-        $_SESSION['admin_user'] = $user['username'];
-        echo json_encode(['success' => true, 'username' => $user['username']]);
+        $_SESSION['user_id']   = $user['id'];
+        $_SESSION['username']  = $user['username'];
+        $_SESSION['role']      = $user['role'];
+        echo json_encode(['success' => true, 'username' => $user['username'], 'role' => $user['role']]);
     } else {
         http_response_code(401);
         echo json_encode(['error' => 'Invalid username or password.']);
@@ -55,10 +49,19 @@ if ($method === 'POST') {
     exit();
 }
 
-// ── DELETE — logout ───────────────────────────────────────
 if ($method === 'DELETE') {
     session_destroy();
     echo json_encode(['success' => true]);
+    exit();
+}
+
+// GET — check session
+if ($method === 'GET') {
+    if (!empty($_SESSION['user_id'])) {
+        echo json_encode(['loggedIn' => true, 'role' => $_SESSION['role'], 'username' => $_SESSION['username']]);
+    } else {
+        echo json_encode(['loggedIn' => false]);
+    }
     exit();
 }
 

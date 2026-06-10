@@ -1,4 +1,4 @@
-/* ACROSS CBEA – Academic ClassRoom Occupancy Scheduling System */
+/* ACROSS CBEA – Automated ClassRoom Occupancy Scheduling System */
 /* College of Business Economics and Accountancy, MMSU */
 
 :root {
@@ -48,36 +48,36 @@
   --rlg: 14px;
 }
 [data-theme="dark"] {
-  --bg: #1c1108;
-  --surface: #2a1a0a;
-  --s2: #382210;
-  --s3: #442c16;
-  --border: #5a3a20;
-  --border2: #704a2a;
-  --text: #fff5ec;
-  --t2: #d4b48a;
-  --t3: #a07850;
-  --green: #ff8c38;
-  --gl: #3a1e06;
-  --gm: #ffa050;
-  --accent: #52c878;
-  --accent-l: #0a2a14;
-  --gold: #ffd040;
-  --gold-l: #382400;
-  --amber: #f0a830;
-  --al: #382000;
-  --red: #f06060;
-  --rl: #380e0e;
-  --blue: #7aacf8;
-  --bl: #0a1830;
-  --warn-info: #7aacf8;
-  --warn-info-bg: #0a1830;
-  --warn-info-border: #2a5090;
-  --warn-ok: #52c878;
-  --warn-ok-bg: #0a2a14;
-  --warn-ok-border: #207040;
-  --warn-alert: #f06060;
-  --warn-alert-bg: #380e0e;
+  --bg: #1e1e1e;
+  --surface: #2a2a2a;
+  --s2: #323232;
+  --s3: #3a3a3a;
+  --border: #444444;
+  --border2: #555555;
+  --text: #e8e8e8;
+  --t2: #aaaaaa;
+  --t3: #777777;
+  --green: #f47920;
+  --gl: #3a2010;
+  --gm: #e86c10;
+  --accent: #4a9eff;
+  --accent-l: #1a2a3a;
+  --gold: #f5c518;
+  --gold-l: #2a2200;
+  --amber: #e09020;
+  --al: #2a1e08;
+  --red: #e05555;
+  --rl: #2a1010;
+  --blue: #4a9eff;
+  --bl: #0e1e30;
+  --warn-info: #4a9eff;
+  --warn-info-bg: #0e1e30;
+  --warn-info-border: #2a5080;
+  --warn-ok: #4caf70;
+  --warn-ok-bg: #0e2018;
+  --warn-ok-border: #206838;
+  --warn-alert: #e05555;
+  --warn-alert-bg: #2a1010;
   --warn-alert-border: #903030;
   --warn-caution: #f0a830;
   --warn-caution-bg: #382000;
@@ -592,7 +592,7 @@ table.data tr:last-child td {
   border-bottom: none;
 }
 table.data tbody tr:hover td {
-  background: #f2f2f2;
+  background: var(--s2);
 }
 
 /* SCHEDULE TABLE */
@@ -1810,4 +1810,271 @@ table.data tbody tr:hover td {
   .rmc-table td {
     font-size: 9px;
   }
+}
+/* ── GRID VIEW (Room Utilization) ── */
+.util-grid {
+  border-collapse: collapse;
+  font-size: 10px;
+  min-width: 600px;
+}
+.util-grid th {
+  background: var(--s2);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--t3);
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+  min-width: 80px;
+}
+.util-grid th.section-hd {
+  background: var(--green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-align: center;
+  padding: 7px 4px;
+}
+.util-grid th.time-th {
+  background: var(--s3);
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  font-size: 9px;
+  color: var(--t2);
+  text-align: right;
+}
+.util-grid td {
+  border: 1px solid var(--border);
+  height: 40px;
+  padding: 1px;
+  vertical-align: top;
+  min-width: 80px;
+}
+.util-grid td.time-col {
+  background: var(--s2);
+  font-size: 9px;
+  color: var(--t2);
+  font-weight: 700;
+  padding: 0 6px;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+}
+.util-grid td.section-sep {
+  background: var(--s3);
+  height: 8px;
+  padding: 0;
+  border: none;
+}
+
+/* ── IMPORT MODAL ── */
+.import-drop {
+  border: 2px dashed var(--border);
+  border-radius: var(--r);
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--s2);
+}
+.import-drop:hover {
+  border-color: var(--green);
+  background: var(--gl);
+}
+.import-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+#import-preview-tbl tr.ok td {
+  background: #e8f8f0;
+}
+#import-preview-tbl tr.flagged td {
+  background: #fce8e8;
+}
+#import-preview-tbl tr.conflict td {
+  background: #fdf0dc;
+}
+
+/* ── FACULTY SCREEN ── */
+#screen-faculty .req-section {
+  background: var(--surface);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 24px;
+}
+
+/* ── PG HEADER FLEX ── */
+.pg-hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.pg-hd h1 {
+  margin-bottom: 2px;
+}
+
+/* ── CONFLICT CHIPS ── */
+.slot-chip.conflict {
+  border-left-color: #d04040 !important;
+  background: #fee8e8 !important;
+  color: #c02020 !important;
+  cursor: pointer;
+}
+.slot-chip.conflict:hover {
+  background: #fdd !important;
+}
+
+/* ── 30-MIN ROW HEIGHT ── */
+.sched-table tr {
+  height: 20px;
+}
+.sched-table td.time-col {
+  font-size: 9px;
+  white-space: nowrap;
+  padding: 0 6px;
+  text-align: right;
+  vertical-align: top;
+  padding-top: 3px;
+  width: 72px;
+  min-width: 72px;
+}
+.sched-table td.day-cell {
+  padding: 2px;
+  vertical-align: top;
+  min-height: 20px;
+}
+
+/* ── GRID VIEW CHIP FILL ── */
+.util-grid td {
+  position: relative;
+  min-height: 20px;
+}
+.util-grid td[rowspan] {
+  overflow: visible;
+}
+
+/* ── GRID CHIP FILL ── */
+.util-grid td {
+  position: relative;
+  min-height: 20px;
+}
+.util-grid td[rowspan] {
+  overflow: visible;
+}
+
+/* ── CONFLICT CHIPS ── */
+.slot-chip.conflict {
+  border-left-color: #d04040 !important;
+  background: #fee8e8 !important;
+  color: #c02020 !important;
+  cursor: pointer;
+}
+[data-theme="dark"] .slot-chip.conflict {
+  background: #3a1010 !important;
+  color: #f07070 !important;
+  border-left-color: #e05555 !important;
+}
+.slot-chip.conflict:hover {
+  opacity: 0.85;
+}
+
+/* ── 30-MIN ROW HEIGHT ── */
+.sched-table tr {
+  height: 20px;
+}
+.sched-table td.time-col {
+  font-size: 9px;
+  white-space: nowrap;
+  padding: 0 6px;
+  text-align: right;
+  vertical-align: top;
+  padding-top: 3px;
+  width: 72px;
+  min-width: 72px;
+}
+.sched-table td.day-cell {
+  padding: 2px;
+  vertical-align: top;
+  min-height: 20px;
+}
+
+/* ── IMPORT FLAGGED EDITABLE ── */
+#import-preview-tbl tr.flagged td input,
+#import-preview-tbl tr.flagged td select {
+  font-size: 10px;
+  padding: 2px 4px;
+  border: 1px solid var(--amber);
+  border-radius: 3px;
+  background: var(--s2);
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── GRID TAB BAR ── */
+.grid-tab-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 14px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--s2);
+}
+.grid-tab-btn {
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface);
+  color: var(--t2);
+}
+.grid-tab-btn.active {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+
+/* ── PG HEADER FLEX ── */
+.pg-hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.pg-hd h1 {
+  margin-bottom: 2px;
+}
+
+/* ── FACULTY SCREEN ── */
+#screen-faculty .req-section {
+  background: var(--surface);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 24px;
 }
