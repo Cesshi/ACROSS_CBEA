@@ -1,6 +1,7 @@
-/* ACROSS CBEA – main.js */
-/* Academic ClassRoom Occupancy Scheduling System, CBEA MMSU */
-/* ── API Integration Layer ── */
+/* ACROSS CBEA */
+/* Automated ClassRoom Occupancy Scheduling System, CBEA MMSU */
+
+// ── API ───────────────────────────────────────────────────
 const API = {
   base: "/across_cbea/api",
   async get(endpoint, params = "") {
@@ -44,40 +45,77 @@ const API = {
     if (!r.ok) throw new Error(j.error || "Request failed");
     return j;
   },
+  async upload(endpoint, formData) {
+    const r = await fetch(`${this.base}/${endpoint}.php`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Upload failed");
+    return j;
+  },
 };
 
-async function loadData() {
-  try {
-    const [r, b] = await Promise.all([
-      API.get("rooms"),
-      API.get("reservations", "status=all"),
-    ]);
-    rooms = r;
-    bookings = b.map((x) => ({ ...x, time: x.time })); // time_slot aliased as time in API
-  } catch (e) {
-    console.error("loadData error:", e);
-    toast("⚠️ Could not load data from server. Using demo mode.");
-  }
-  populatePubSelects();
-  renderPubSched();
-  renderVacantGrid();
-}
+// ── CONSTANTS ─────────────────────────────────────────────
+// 30-minute row slots from 7:00 AM to 9:00 PM
+const SLOT_START = 7 * 60; // 7:00 AM in minutes
+const SLOT_END = 21 * 60; // 9:00 PM in minutes
+const SLOT_SIZE = 30; // 30-minute rows
 
-const TIMES = [
-  "7:00–8:00 AM",
-  "8:00–9:00 AM",
-  "9:00–10:00 AM",
-  "10:00–11:00 AM",
-  "11:00 AM–12:00 PM",
-  "12:00–1:00 PM",
-  "1:00–2:00 PM",
-  "2:00–3:00 PM",
-  "3:00–4:00 PM",
-  "4:00–5:00 PM",
-  "5:00–6:00 PM",
-  "6:00–7:00 PM",
-];
+// Generate 30-min slot labels
+function genSlots(startMin, endMin, step) {
+  const slots = [];
+  for (let m = startMin; m < endMin; m += step) {
+    const h = Math.floor(m / 60),
+      mn = m % 60;
+    const label =
+      (h > 12 ? h - 12 : h === 0 ? 12 : h) +
+      ":" +
+      String(mn).padStart(2, "0") +
+      (mn === 0 && h < 12 ? " AM" : mn === 0 && h >= 12 ? " PM" : "");
+    slots.push({ min: m, label: label.trim() });
+  }
+  return slots;
+}
+const ALL_SLOTS = genSlots(SLOT_START, SLOT_END, SLOT_SIZE);
+
+// Section slot ranges (in minutes from midnight)
+const SECTION_MWF = { start: 7 * 60, end: 21 * 60, patterns: null };
+const SECTION_TTH = { start: 7 * 60, end: 21 * 60, patterns: null };
+const SECTION_SAT = { start: 7 * 60, end: 21 * 60, patterns: null };
+
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Day pattern → days mapping
+const DAY_MAP = {
+  MWF: ["Mon", "Wed", "Fri"],
+  TTH: ["Tue", "Thu"],
+  SAT: ["Sat"],
+  MW: ["Mon", "Wed"],
+  MF: ["Mon", "Fri"],
+  WF: ["Wed", "Fri"],
+  M: ["Mon"],
+  T: ["Tue"],
+  W: ["Wed"],
+  TH: ["Thu"],
+  F: ["Fri"],
+};
+
+// Which day patterns belong to each section
+const MWF_PATTERNS = new Set(["MWF", "MW", "MF", "WF", "M", "W", "F"]);
+const TTH_PATTERNS = new Set(["TTH", "TH", "T"]);
+const SAT_PATTERNS = new Set(["SAT"]);
+
+const RESTRICTED_ROOMS = new Set([
+  "THM Extension Building 3rd Floor",
+  "BAR ROOM",
+  "KL1",
+  "KL2",
+  "AVR CBEA",
+  "READING CENTER",
+]);
+
 const PALETTE_L = [
   { bg: "#FEF0E0", border: "#F47920", text: "#C05010" },
   { bg: "#E6F0EA", border: "#1A5C2A", text: "#1A5C2A" },
@@ -103,10 +141,8 @@ let rooms = [];
 let bookings = [];
 let editRoomId = null,
   editBookingId = null;
-let selectedSlot = { day: null, time: null };
-let destSelectedSlot = { day: null, time: null };
+let currentRole = null; // 'admin' | 'faculty'
 
-// ── UTILS ──
 const isDark = () =>
   document.documentElement.getAttribute("data-theme") === "dark";
 const palette = () => (isDark() ? PALETTE_D : PALETTE_L);
@@ -114,6 +150,12 @@ const getColor = (i) => {
   const p = palette();
   return p[i % p.length];
 };
+// Stable color based on booking id — same booking always same color
+function getStableColor(bk) {
+  const p = palette();
+  const seed = (bk.id || 0) + (bk.subj || "").charCodeAt(0) || 0;
+  return p[seed % p.length];
+}
 function fmtDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -142,8 +184,9 @@ function setErr(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add("err");
 }
+const MAX_VISIBLE = 4;
 
-// ── THEME ──
+// ── THEME ─────────────────────────────────────────────────
 function toggleTheme() {
   const h = document.documentElement;
   h.setAttribute(
@@ -154,12 +197,18 @@ function toggleTheme() {
   renderVacantGrid();
   if (document.getElementById("screen-admin").classList.contains("active")) {
     const ap = document.querySelector(".pg.active");
-    if (ap && ap.id === "apg-schedule") renderAdminSched();
+    if (ap && ap.id === "apg-schedule") {
+      renderAdminSched();
+      renderAdminGrid();
+    }
   }
-  if (document.getElementById("pub-room").value) renderRoomMiniCal();
+  if (document.getElementById("screen-faculty").classList.contains("active")) {
+    renderFacSched();
+    renderFacGrid();
+  }
 }
 
-// ── SCREENS ──
+// ── SCREENS ───────────────────────────────────────────────
 function goScreen(id) {
   document
     .querySelectorAll(".screen")
@@ -173,16 +222,88 @@ function goScreen(id) {
   if (id === "admin") {
     initAdmin();
   }
+  if (id === "faculty") {
+    initFaculty();
+  }
 }
 function smoothScrollTo(id) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
-function scrollTo(id) {
-  smoothScrollTo(id);
+
+async function doLogin() {
+  const u = document.getElementById("l-user").value.trim();
+  const p = document.getElementById("l-pass").value;
+  const errEl = document.getElementById("l-err");
+  if (!u || !p) {
+    errEl.querySelector("span:last-child").textContent =
+      "Please enter username and password.";
+    showAlert("l-err", true);
+    return;
+  }
+  try {
+    const res = await API.post("login", { username: u, password: p });
+    currentRole = res.role;
+    showAlert("l-err", false);
+    await loadData();
+    goScreen(res.role === "admin" ? "admin" : "faculty");
+  } catch (e) {
+    errEl.querySelector("span:last-child").textContent =
+      "Incorrect username or password.";
+    showAlert("l-err", true);
+  }
 }
 
-// ── TOOLTIP ──
+async function doLogout() {
+  try {
+    await API.del("login", {});
+  } catch (e) {}
+  currentRole = null;
+  goScreen("landing");
+}
+
+// ── DATA ──────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const [r, b] = await Promise.all([
+      API.get("rooms"),
+      API.get("reservations", "status=all"),
+    ]);
+    rooms = r.filter((rm) => !RESTRICTED_ROOMS.has(rm.name));
+    bookings = b;
+  } catch (e) {
+    console.error("loadData error:", e);
+    toast("⚠️ Could not load data from server.");
+  }
+  populatePubSelects();
+  renderPubSched();
+  renderVacantGrid();
+}
+
+async function loadAdminData() {
+  try {
+    const [r, b] = await Promise.all([
+      API.get("rooms"),
+      API.get("reservations", "status=all"),
+    ]);
+    rooms = r.filter((rm) => !RESTRICTED_ROOMS.has(rm.name));
+    bookings = b;
+    populateAdminSelects();
+    renderDashboard();
+    renderAdminSched();
+    renderAdminGrid();
+    renderRoomsTbl();
+    renderBookingsTbl();
+    renderReqTbl();
+    updateBadge();
+    populatePubSelects();
+    populateFacSelects();
+  } catch (e) {
+    console.error("loadAdminData", e);
+  }
+}
+
+// ── TOOLTIP ───────────────────────────────────────────────
 const tip = document.getElementById("tooltip");
 function showTip(e, b) {
   document.getElementById("tt-subj").textContent = b.subj;
@@ -213,63 +334,405 @@ document.addEventListener("mousemove", (e) => {
   if (tip.classList.contains("show")) moveTip(e);
 });
 
-// ── SCHEDULE BUILDER ──
-const MAX_VISIBLE = 4;
-
-function buildChip(b, colorIdx) {
-  const c = getColor(colorIdx);
+// ── CHIP BUILDER ──────────────────────────────────────────
+function buildChip(b, colorIdx, isConflict = false) {
+  const c = getStableColor ? getStableColor(b) : getColor(colorIdx);
   const chip = document.createElement("div");
-  chip.className = "slot-chip" + (b.status === "pending" ? " pending" : "");
-  chip.style.cssText = `background:${c.bg};border-left-color:${c.border};color:${c.text}`;
-  chip.innerHTML = `<div class="chip-s">${b.subj}</div><div class="chip-r">${b.room}</div>`;
+  chip.className =
+    "slot-chip" +
+    (b.status === "pending" ? " pending" : "") +
+    (isConflict ? " conflict" : "");
+  chip.style.cssText = isConflict
+    ? "background:#FEE8E8;border-left-color:#D04040;color:#C02020"
+    : `background:${c.bg};border-left-color:${c.border};color:${c.text}`;
+  chip.innerHTML = `<div class="chip-s">${isConflict ? "⚠️ " : ""}${b.subj}</div><div class="chip-r">${b.group || b.prof}</div>`;
   chip.addEventListener("mouseenter", (e) => showTip(e, b));
   chip.addEventListener("mouseleave", hideTip);
+  if (isConflict && currentRole === "admin") {
+    chip.style.cursor = "pointer";
+    chip.title = "Conflict — click to edit";
+    chip.addEventListener("click", () => openBookingModal(b.id));
+  }
   return chip;
 }
+
+// ── WEEKLY SCHEDULE TABLE ─────────────────────────────────
+// matchesDay: checks if a booking's day pattern covers a specific weekday
+function matchesDay(pattern, weekday) {
+  const days = DAY_MAP[pattern] || [pattern];
+  return days.includes(weekday);
+}
+
+// ── TIME UTILITIES ───────────────────────────────────────
+function timeToMin(tStr) {
+  if (!tStr) return -1;
+  let s = tStr.toString().trim().toLowerCase();
+  const hasPM = s.includes("pm");
+  const hasAM = s.includes("am");
+  s = s
+    .replace(/[ap]m/gi, "")
+    .replace(/[\u2013\u2014]/g, "-")
+    .trim();
+  const parts = s.split(":");
+  if (parts.length < 2) return -1;
+  let h = parseInt(parts[0]) || 0;
+  const m = parseInt(parts[1]) || 0;
+  if (hasPM && h < 12) h += 12;
+  else if (hasAM && h === 12) h = 0;
+  else if (!hasPM && !hasAM) {
+    // PH convention: 1-6 without AM/PM = PM
+    if (h >= 1 && h <= 6) h += 12;
+  }
+  return h * 60 + m;
+}
+
+function parseRange(t) {
+  if (!t) return null;
+  let s = t
+    .toString()
+    .trim()
+    .replace(/[\u2013\u2014]/g, "-");
+  // Split on the hyphen between times
+  // Find hyphen that is NOT inside a time (after a digit, before a digit)
+  const m = s.match(
+    /^(\d+:\d+(?:\s*[ap]m)?)[\s\-\u2013\u2014]+(\d+:\d+(?:\s*[ap]m)?)$/i,
+  );
+  if (!m) return null;
+  const start = timeToMin(m[1]);
+  let end = timeToMin(m[2]);
+  if (start < 0 || end < 0) return null;
+  // If end <= start, end is next day or needs PM adjustment
+  if (end <= start) end += 12 * 60;
+  return { start, end };
+}
+
+function slotRowIndex(min) {
+  return Math.floor((min - SLOT_START) / SLOT_SIZE);
+}
+
+function slotRowSpan(startMin, endMin) {
+  const rows = Math.ceil((endMin - startMin) / SLOT_SIZE);
+  return Math.max(1, rows);
+}
+
+function detectConflicts(bkList) {
+  const conflicts = new Set();
+  for (let i = 0; i < bkList.length; i++) {
+    const a = bkList[i];
+    const ra = parseRange(a.time);
+    if (!ra) continue;
+    for (let j = i + 1; j < bkList.length; j++) {
+      const b = bkList[j];
+      if (a.room !== b.room) continue;
+      // Must share at least one day
+      const aDays = DAY_MAP[a.day] || [a.day];
+      const bDays = DAY_MAP[b.day] || [b.day];
+      const sharedDay = aDays.some((d) => bDays.includes(d));
+      if (!sharedDay) continue;
+      const rb = parseRange(b.time);
+      if (!rb) continue;
+      if (ra.start < rb.end && rb.start < ra.end) {
+        conflicts.add(a.id);
+        conflicts.add(b.id);
+      }
+    }
+  }
+  return conflicts;
+}
+
+// ── WEEKLY SCHEDULE (30-min rowspan) ─────────────────────
 function buildSchedTable(headEl, bodyEl, roomFilter) {
+  const approved = bookings.filter(
+    (b) => b.status !== "rejected" && (!roomFilter || b.room === roomFilter),
+  );
+  const conflicts = detectConflicts(
+    bookings.filter((b) => b.status === "approved"),
+  );
+
   headEl.innerHTML =
-    `<th class="time-th">Time</th>` + DAYS.map((d) => `<th>${d}</th>`).join("");
+    `<th class="time-th" style="width:72px;min-width:72px">Time</th>` +
+    DAYS.map((d) => `<th>${d}</th>`).join("");
   bodyEl.innerHTML = "";
-  TIMES.forEach((t) => {
+
+  // Skip map: skip[slotIdx_dayIdx] = true means cell is covered by a rowspan above
+  // Must be declared ONCE outside the slot loop
+  const skip = {};
+
+  ALL_SLOTS.forEach((slot, si) => {
     const tr = document.createElement("tr");
+    // Time label cell
     const tc = document.createElement("td");
     tc.className = "time-col";
-    tc.textContent = t;
+    tc.style.cssText =
+      "font-size:9px;white-space:nowrap;padding:0 6px;text-align:right;vertical-align:top;padding-top:3px";
+    tc.textContent = slot.label;
     tr.appendChild(tc);
-    DAYS.forEach((d) => {
-      const bks = bookings.filter(
-        (b) =>
-          b.time === t &&
-          b.day === d &&
-          (!roomFilter || b.room === roomFilter) &&
-          b.status !== "rejected",
-      );
+
+    DAYS.forEach((d, di) => {
+      const key = si + "_" + di;
+      if (skip[key]) {
+        return;
+      } // cell covered by rowspan above
+
+      // Find bookings that START in this slot for this day
+      const bks = approved.filter((b) => {
+        if (!matchesDay(b.day, d)) return false;
+        const r = parseRange(b.time);
+        if (!r) return false;
+        const startSlot = slotRowIndex(r.start);
+        return startSlot === si;
+      });
+
+      if (bks.length === 0) {
+        const td = document.createElement("td");
+        td.className = "day-cell";
+        td.style.height = "20px";
+        tr.appendChild(td);
+        return;
+      }
+
+      // Use the first booking for rowspan
+      const bk = bks[0];
+      const r = parseRange(bk.time);
+      const span = r ? slotRowSpan(r.start, r.end) : 1;
+
+      // Mark future slots as skipped
+      for (let s2 = si + 1; s2 < si + span; s2++) {
+        skip[s2 + "_" + di] = true;
+      }
+
       const td = document.createElement("td");
       td.className = "day-cell";
+      td.rowSpan = span;
+      td.style.cssText = "padding:2px;vertical-align:top";
+      td.style.height = span * 20 + "px";
+
       const inner = document.createElement("div");
-      inner.className = "cell-inner";
-      const visible = bks.slice(0, MAX_VISIBLE);
-      const overflow = bks.slice(MAX_VISIBLE);
-      visible.forEach((b, i) => inner.appendChild(buildChip(b, i)));
-      if (overflow.length > 0) {
+      inner.style.cssText =
+        "display:flex;flex-direction:column;gap:2px;height:100%";
+
+      bks.forEach((b, i) => {
+        inner.appendChild(buildChip(b, i, conflicts.has(b.id)));
+      });
+      if (bks.length > MAX_VISIBLE) {
         const more = document.createElement("div");
         more.className = "slot-more";
-        more.textContent = `+${overflow.length}`;
-        more.title = `${overflow.length} more — click to view all`;
+        more.textContent = "+" + (bks.length - MAX_VISIBLE);
         more.addEventListener("click", (e) => {
           e.stopPropagation();
-          openSlotPopup(bks, t, d, e);
+          openSlotPopup(bks, slot.label, d, e);
         });
         inner.appendChild(more);
       }
       td.appendChild(inner);
       tr.appendChild(td);
     });
+
     bodyEl.appendChild(tr);
   });
 }
 
-// ── PUBLIC SCHEDULE ──
+// ── GRID VIEW — tabbed by day pattern ────────────────────
+
+// Day pattern hierarchy: a booking with pattern P appears in tab T
+// if every day in T is covered by P's days
+const ALL_PATTERNS_ORDERED = [
+  "MWF",
+  "TTH",
+  "SAT",
+  "MW",
+  "MF",
+  "WF",
+  "M",
+  "T",
+  "W",
+  "TH",
+  "F",
+];
+
+// Returns true if booking day pattern "covers" the tab pattern
+// e.g. booking=TTH covers tab=T and tab=TH
+function patternCoversTab(bookingDay, tabPattern) {
+  const bDays = DAY_MAP[bookingDay] || [bookingDay];
+  const tDays = DAY_MAP[tabPattern] || [tabPattern];
+  return tDays.every((d) => bDays.includes(d));
+}
+
+// Get all tabs that have at least one booking
+function getActiveTabs(bkList) {
+  const tabs = [];
+  ALL_PATTERNS_ORDERED.forEach((tab) => {
+    const hasBk = bkList.some((b) => patternCoversTab(b.day, tab));
+    if (hasBk) tabs.push(tab);
+  });
+  return tabs;
+}
+
+// Current active grid tab per grid element (by wrapEl id)
+const gridTabState = {};
+
+function buildGridView(wrapEl, roomFilter) {
+  if (!wrapEl) return;
+  const filteredRooms = roomFilter
+    ? rooms.filter((r) => r.name === roomFilter)
+    : rooms;
+  if (!filteredRooms.length) {
+    wrapEl.innerHTML =
+      '<p style="color:var(--t3);padding:16px">No rooms to display.</p>';
+    return;
+  }
+
+  const approved = bookings.filter((b) => b.status === "approved");
+  const conflicts = detectConflicts(approved);
+  const tabs = getActiveTabs(approved);
+
+  if (!tabs.length) {
+    wrapEl.innerHTML =
+      '<p style="color:var(--t3);padding:16px">No approved reservations to display.</p>';
+    return;
+  }
+
+  const wrapId = wrapEl.id || "grid";
+  // Default to first tab or remembered tab
+  if (!gridTabState[wrapId] || !tabs.includes(gridTabState[wrapId])) {
+    gridTabState[wrapId] = tabs[0];
+  }
+  const activeTab = gridTabState[wrapId];
+
+  // ── TAB BAR ──
+  const tabBar = document.createElement("div");
+  tabBar.style.cssText =
+    "display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0;border-bottom:1px solid var(--border);background:var(--s2)";
+
+  tabs.forEach((tab) => {
+    const btn = document.createElement("button");
+    btn.textContent = tab;
+    btn.style.cssText = `padding:5px 14px;font-size:11px;font-weight:700;border-radius:6px 6px 0 0;border:1px solid var(--border);border-bottom:none;cursor:pointer;transition:all .15s;${tab === activeTab ? "background:var(--green);color:#fff;border-color:var(--green)" : "background:var(--surface);color:var(--t2)"}`;
+    btn.addEventListener("click", () => {
+      gridTabState[wrapId] = tab;
+      buildGridView(wrapEl, roomFilter);
+    });
+    tabBar.appendChild(btn);
+  });
+
+  // ── TABLE ──
+  const tableWrap = document.createElement("div");
+  tableWrap.style.cssText = "overflow-x:auto;padding:0";
+
+  const tbl = document.createElement("table");
+  tbl.className = "util-grid";
+
+  // Bookings for this tab
+  const tabBks = approved.filter((b) => patternCoversTab(b.day, activeTab));
+
+  // Room header row
+  const hdrRow = tbl.insertRow();
+  const timeTh = document.createElement("th");
+  timeTh.className = "time-th";
+  timeTh.textContent = "Time";
+  hdrRow.appendChild(timeTh);
+  filteredRooms.forEach((r) => {
+    const th = document.createElement("th");
+    th.textContent = r.name;
+    th.style.minWidth = "90px";
+    hdrRow.appendChild(th);
+  });
+
+  // Skip map: roomIdx -> Set of slot indices already covered by rowspan
+  const skipMap = {};
+  filteredRooms.forEach((_, ri) => (skipMap[ri] = new Set()));
+
+  ALL_SLOTS.forEach((slot, si) => {
+    const tr = tbl.insertRow();
+
+    // Time label
+    const tc = document.createElement("td");
+    tc.className = "time-col";
+    tc.style.cssText =
+      "font-size:9px;white-space:nowrap;padding:0 6px;text-align:right;vertical-align:top;padding-top:2px;width:60px;min-width:60px";
+    tc.textContent = slot.label;
+    tr.appendChild(tc);
+
+    filteredRooms.forEach((room, ri) => {
+      // If this slot is covered by a previous rowspan, skip — add NO td
+      if (skipMap[ri].has(si)) return;
+
+      // Find bookings starting at this slot for this room
+      const bks = tabBks.filter((b) => {
+        if (b.room !== room.name) return false;
+        const r2 = parseRange(b.time);
+        if (!r2) return false;
+        return slotRowIndex(r2.start) === si;
+      });
+
+      const td = document.createElement("td");
+      td.style.cssText =
+        "padding:1px;vertical-align:top;border:1px solid var(--border)";
+
+      if (bks.length === 0) {
+        td.style.height = "20px";
+        tr.appendChild(td);
+        return;
+      }
+
+      // Compute rowspan from the first booking
+      const r2 = parseRange(bks[0].time);
+      const span = r2 ? Math.max(1, slotRowSpan(r2.start, r2.end)) : 1;
+
+      // Mark all spanned slots in skipMap
+      for (let s2 = si + 1; s2 < si + span; s2++) skipMap[ri].add(s2);
+
+      td.rowSpan = span;
+      td.style.height = span * 20 + "px";
+
+      // Set td to position:relative so chip can fill it
+      td.style.position = "relative";
+      td.style.padding = "0";
+
+      // Chips — fill the full td height, stacked if multiple
+      const chipWrap = document.createElement("div");
+      chipWrap.style.cssText =
+        "position:absolute;inset:0;display:flex;flex-direction:column;gap:1px;overflow:hidden";
+
+      bks.forEach((bk) => {
+        const c = getStableColor(bk);
+        const isConflict = conflicts.has(bk.id);
+        const chip = document.createElement("div");
+        chip.style.cssText = [
+          "flex:1",
+          "min-height:0",
+          "border-radius:3px",
+          "padding:2px 4px",
+          "font-size:9px",
+          "line-height:1.3",
+          "overflow:hidden",
+          "cursor:pointer",
+          `background:${isConflict ? "#FEE8E8" : c.bg}`,
+          `border-left:3px solid ${isConflict ? "#D04040" : c.border}`,
+          `color:${isConflict ? "#C02020" : c.text}`,
+        ].join(";");
+        chip.innerHTML = `<div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${isConflict ? "⚠️ " : ""}${bk.subj}</div><div style="opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:8px">${bk.group || bk.prof}</div>`;
+        chip.addEventListener("mouseenter", (e) => showTip(e, bk));
+        chip.addEventListener("mouseleave", hideTip);
+        if (currentRole === "admin") {
+          chip.addEventListener("click", () => openBookingModal(bk.id));
+        }
+        chipWrap.appendChild(chip);
+      });
+
+      td.appendChild(chipWrap);
+
+      tr.appendChild(td);
+    });
+  });
+
+  tableWrap.appendChild(tbl);
+  wrapEl.innerHTML = "";
+  wrapEl.appendChild(tabBar);
+  wrapEl.appendChild(tableWrap);
+}
+
+// ── PUBLIC SCHEDULE ───────────────────────────────────────
 function renderPubSched() {
   buildSchedTable(
     document.getElementById("pub-sched-hd"),
@@ -278,9 +741,9 @@ function renderPubSched() {
   );
 }
 
-// ── VACANT ──
-let vacantTypeFilter = "";
-let vacantAvailFilter = "all";
+// ── VACANT ────────────────────────────────────────────────
+let vacantTypeFilter = "",
+  vacantAvailFilter = "all";
 function setVacantType(type, btn) {
   vacantTypeFilter = type;
   document
@@ -304,7 +767,6 @@ function renderVacantGrid() {
   const floorEl = document.getElementById("vacant-floor-filter");
   const search = (searchEl ? searchEl.value : "").toLowerCase().trim();
   const floorFilter = floorEl ? floorEl.value : "";
-  // Populate floor dropdown
   if (floorEl) {
     const floors = [...new Set(rooms.map((r) => r.floor))].sort();
     const cur = floorEl.value;
@@ -336,18 +798,7 @@ function renderVacantGrid() {
     ? filtered
         .map((r) => {
           const hasB = approvedRooms.has(r.name);
-          const clickable = !hasB;
-          return `<div class="v-room" style="${clickable ? "cursor:pointer" : ""}"
-      ${clickable ? `onclick="_doSelectVacantRoom('${r.name.replace(/'/g, "\\'")}')"` : ""}
-      ${clickable ? `onmouseover="this.style.borderColor='var(--green)';this.style.background='var(--gl)'" onmouseout="this.style.borderColor='';this.style.background=''"` : ""}
-      title="${clickable ? "Click to request this room" : ""}">
-      <div class="v-room-name">${r.name}</div>
-      <div class="v-room-type">${r.type} · Cap. ${r.cap}</div>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:8px">${r.floor}</div>
-      <span class="v-badge" style="${hasB ? "background:var(--al);color:var(--amber)" : ""}">
-        ${hasB ? "Has Reservations" : clickable ? "Vacant — click to request" : "Vacant"}
-      </span>
-    </div>`;
+          return `<div class="v-room"><div class="v-room-name">${r.name}</div><div class="v-room-type">${r.type} · Cap. ${r.cap || r.cap}</div><div style="font-size:11px;color:var(--t3);margin-bottom:8px">${r.floor}</div><span class="v-badge" style="${hasB ? "background:var(--al);color:var(--amber)" : ""}">${hasB ? "Has Reservations" : "Vacant"}</span></div>`;
         })
         .join("")
     : `<p style="color:var(--t3);font-size:13px;padding:8px 0;grid-column:1/-1">No rooms match your filters.</p>`;
@@ -359,184 +810,259 @@ function toggleVacant(btn) {
   if (open) renderVacantGrid();
 }
 
-// ── PUBLIC SELECTS ──
+// ── PUBLIC SELECTS ────────────────────────────────────────
 function populatePubSelects() {
-  const rOpts =
-    '<option value="">Select a room</option>' +
-    rooms.map((r) => `<option>${r.name}</option>`).join("");
-  const rOptsFrom =
-    '<option value="">Select current room</option>' +
-    rooms.map((r) => `<option>${r.name}</option>`).join("");
-  const rOptsTo =
-    '<option value="">Select destination room</option>' +
-    rooms.map((r) => `<option>${r.name}</option>`).join("");
-  const pr = document.getElementById("pub-room");
-  if (pr) pr.innerHTML = rOpts;
   const pf = document.getElementById("pub-room-f");
   if (pf)
     pf.innerHTML =
       '<option value="">All Rooms</option>' +
       rooms.map((r) => `<option>${r.name}</option>`).join("");
-  const fr = document.getElementById("pub-from-room");
-  if (fr) fr.innerHTML = rOptsFrom;
-  const tr = document.getElementById("pub-to-room");
-  if (tr) tr.innerHTML = rOptsTo;
 }
 
-// ── REQUEST FORM STATE ──
-let newSlot = { day: null, time: null }; // new schedule mode
-let fromSlot = { day: null, time: null }; // change: from slot
-let toSlot = { day: null, time: null }; // change: to slot
-let pickerMode = null; // 'new'|'from'|'to'
-let pickerRoom = null;
-
-function onReqTypeChange() {
-  const reqtype = document.getElementById("pub-reqtype").value;
-  document.getElementById("new-sched-zone").style.display =
-    reqtype === "new" ? "" : "none";
-  document.getElementById("change-sched-zone").style.display =
-    reqtype === "change" ? "" : "none";
-  document.getElementById("spacer-fg").style.display = "none";
-  resetRequestState();
+// ── FACULTY INIT ──────────────────────────────────────────
+function initFaculty() {
+  populateFacSelects();
+  renderFacSched();
+  showAlert("fac-room-info", true);
+  document.getElementById("fac-new-zone").style.display = "";
+  document.getElementById("fac-change-zone").style.display = "none";
 }
 
-function resetRequestState() {
-  newSlot = { day: null, time: null };
-  fromSlot = { day: null, time: null };
-  toSlot = { day: null, time: null };
-  document.getElementById("pub-day").value = "";
-  document.getElementById("pub-time").value = "";
-  hideSlotDisplay("new-slot-display");
-  hideSlotDisplay("from-slot-display");
-  hideSlotDisplay("to-slot-display");
-  const cs = document.getElementById("change-summary");
-  if (cs) cs.classList.remove("show");
-  showAlert("pub-conflict", false);
-  showAlert("pub-warn", false);
-  showAlert("pub-room-info", true);
+function populateFacSelects() {
+  const rOpts =
+    '<option value="">Select a room</option>' +
+    rooms.map((r) => `<option>${r.name}</option>`).join("");
+  const rF = document.getElementById("fac-room-f");
+  if (rF)
+    rF.innerHTML =
+      '<option value="">All Rooms</option>' +
+      rooms.map((r) => `<option>${r.name}</option>`).join("");
+  const gRF = document.getElementById("fac-grid-room-f");
+  if (gRF)
+    gRF.innerHTML =
+      '<option value="">All Rooms</option>' +
+      rooms.map((r) => `<option>${r.name}</option>`).join("");
+  ["fac-room", "fac-from-room", "fac-to-room"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = rOpts.replace("Select a room", "Select a room");
+  });
 }
 
-function hideSlotDisplay(id) {
+function renderFacSched() {
+  buildSchedTable(
+    document.getElementById("fac-sched-hd"),
+    document.getElementById("fac-sched-bd"),
+    document.getElementById("fac-room-f")?.value || "",
+  );
+}
+
+function renderFacGrid() {
+  buildGridView(
+    document.getElementById("fac-grid-wrap"),
+    document.getElementById("fac-grid-room-f")?.value || "",
+  );
+}
+
+let facViewIsGrid = false;
+function toggleFacultyView() {
+  facViewIsGrid = !facViewIsGrid;
+  document.getElementById("fac-weekly-view").style.display = facViewIsGrid
+    ? "none"
+    : "";
+  document.getElementById("fac-grid-view").style.display = facViewIsGrid
+    ? ""
+    : "none";
+  document.getElementById("fac-view-toggle").textContent = facViewIsGrid
+    ? "☰ Weekly View"
+    : "⊞ Grid View";
+  if (facViewIsGrid) renderFacGrid();
+}
+
+// ── FACULTY REQUEST FORM ──────────────────────────────────
+let facNewSlot = { day: null, time: null },
+  facFromSlot = { day: null, time: null },
+  facToSlot = { day: null, time: null };
+let facPickerMode = null,
+  facPickerRoom = null;
+
+function onFacReqTypeChange() {
+  const t = document.getElementById("fac-reqtype").value;
+  document.getElementById("fac-new-zone").style.display =
+    t === "new" ? "" : "none";
+  document.getElementById("fac-change-zone").style.display =
+    t === "change" ? "" : "none";
+  facNewSlot = { day: null, time: null };
+  facFromSlot = { day: null, time: null };
+  facToSlot = { day: null, time: null };
+}
+
+function onFacNewRoomChange() {
+  const room = document.getElementById("fac-room").value;
+  facNewSlot = { day: null, time: null };
+  hideEl("fac-new-slot-display");
+  showAlert("fac-room-info", false);
+  if (room) openFacPickerModal(room, "new");
+  else showAlert("fac-room-info", true);
+}
+function onFacFromRoomChange() {
+  const room = document.getElementById("fac-from-room").value;
+  facFromSlot = { day: null, time: null };
+  hideEl("fac-from-display");
+  if (room) openFacPickerModal(room, "from");
+}
+function onFacToRoomChange() {
+  const room = document.getElementById("fac-to-room").value;
+  facToSlot = { day: null, time: null };
+  hideEl("fac-to-display");
+  if (room) openFacPickerModal(room, "to");
+}
+function clearFacNewSlot() {
+  facNewSlot = { day: null, time: null };
+  hideEl("fac-new-slot-display");
+}
+function clearFacFromSlot() {
+  facFromSlot = { day: null, time: null };
+  hideEl("fac-from-display");
+  updateFacChangeSummary();
+}
+function clearFacToSlot() {
+  facToSlot = { day: null, time: null };
+  hideEl("fac-to-display");
+  updateFacChangeSummary();
+}
+
+function hideEl(id) {
   const el = document.getElementById(id);
   if (el) el.style.display = "none";
 }
-
-function showSlotDisplay(id, text) {
+function showEl(id, text) {
   const el = document.getElementById(id);
-  if (el) {
-    el.style.display = "flex";
-    el.querySelector("span:nth-child(2)").textContent = text;
-  }
+  if (!el) return;
+  el.style.display = "flex";
+  const sp = el.querySelector("span:nth-child(2)");
+  if (sp) sp.textContent = text;
 }
 
-// ── NEW SCHEDULE ROOM CHANGE ──
-function onNewRoomChange() {
-  const room = document.getElementById("pub-room").value;
-  newSlot = { day: null, time: null };
-  document.getElementById("pub-day").value = "";
-  document.getElementById("pub-time").value = "";
-  hideSlotDisplay("new-slot-display");
-  showAlert("pub-room-info", false);
-  showAlert("pub-conflict", false);
-  showAlert("pub-warn", false);
-  if (room) {
-    openPickerModal(room, "new");
-  } else {
-    showAlert("pub-room-info", true);
-  }
-}
-
-function clearNewSlot() {
-  newSlot = { day: null, time: null };
-  document.getElementById("pub-day").value = "";
-  document.getElementById("pub-time").value = "";
-  hideSlotDisplay("new-slot-display");
-}
-
-// ── CHANGE SCHEDULE FROM/TO ──
-function onFromRoomChange() {
-  const room = document.getElementById("pub-from-room").value;
-  fromSlot = { day: null, time: null };
-  hideSlotDisplay("from-slot-display");
-  document.getElementById("from-room-hint").textContent = room
-    ? "Loading schedule..."
-    : "Select a room to view its schedule";
-  showAlert("pub-conflict", false);
-  showAlert("pub-warn", false);
-  if (room) {
-    openPickerModal(room, "from");
-  }
-  updateChangeSummaryNew();
-}
-function onToRoomChange() {
-  const room = document.getElementById("pub-to-room").value;
-  toSlot = { day: null, time: null };
-  hideSlotDisplay("to-slot-display");
-  document.getElementById("to-room-hint").textContent = room
-    ? "Loading schedule..."
-    : "Select a room to view its schedule";
-  showAlert("pub-conflict", false);
-  showAlert("pub-warn", false);
-  if (room) {
-    openPickerModal(room, "to");
-  }
-  updateChangeSummaryNew();
-}
-function clearFromSlot() {
-  fromSlot = { day: null, time: null };
-  hideSlotDisplay("from-slot-display");
-  document.getElementById("from-room-hint").textContent =
-    "Click the room dropdown to reopen the schedule";
-  updateChangeSummaryNew();
-}
-function clearToSlot() {
-  toSlot = { day: null, time: null };
-  document.getElementById("pub-day").value = "";
-  document.getElementById("pub-time").value = "";
-  hideSlotDisplay("to-slot-display");
-  document.getElementById("to-room-hint").textContent =
-    "Click the room dropdown to reopen the schedule";
-  updateChangeSummaryNew();
-}
-
-function updateChangeSummaryNew() {
-  const cs = document.getElementById("change-summary");
+function updateFacChangeSummary() {
+  const cs = document.getElementById("fac-change-summary");
   if (!cs) return;
-  const fromRoom = document.getElementById("pub-from-room")?.value || "";
-  const toRoom = document.getElementById("pub-to-room")?.value || "";
-  if ((fromRoom && fromSlot.day) || (toRoom && toSlot.day)) {
+  const fr = document.getElementById("fac-from-room")?.value || "";
+  const tr = document.getElementById("fac-to-room")?.value || "";
+  if ((fr && facFromSlot.day) || (tr && facToSlot.day)) {
     cs.classList.add("show");
-    document.getElementById("cs-from").textContent =
-      fromRoom && fromSlot.day
-        ? `${fromRoom} · ${fromSlot.day} · ${fromSlot.time}`
+    document.getElementById("fac-cs-from").textContent =
+      fr && facFromSlot.day
+        ? `${fr} · ${facFromSlot.day} · ${facFromSlot.time}`
         : "Not yet selected";
-    document.getElementById("cs-to").textContent =
-      toRoom && toSlot.day
-        ? `${toRoom} · ${toSlot.day} · ${toSlot.time}`
+    document.getElementById("fac-cs-to").textContent =
+      tr && facToSlot.day
+        ? `${tr} · ${facToSlot.day} · ${facToSlot.time}`
         : "Not yet selected";
   } else {
     cs.classList.remove("show");
   }
 }
 
-// ── PICKER MODAL ──
-function openPickerModal(room, mode) {
-  pickerMode = mode;
-  pickerRoom = room;
-  const isChange = mode === "from" || mode === "to";
+function openFacPickerModal(room, mode) {
+  facPickerMode = mode;
+  facPickerRoom = room;
   const isFrom = mode === "from";
   document.getElementById("sched-picker-title").textContent =
     `${room} — ${mode === "new" ? "Select a Time Slot" : isFrom ? "Select Your Current Slot" : "Select Your New Slot"}`;
-  document.getElementById("sched-picker-sub").textContent =
-    mode === "new"
-      ? "Click any vacant slot to book it."
-      : isFrom
-        ? "Click your existing reserved slot (amber = your bookings)."
-        : "Click a vacant slot as your new time.";
+  document.getElementById("sched-picker-sub").textContent = isFrom
+    ? "Click your existing reserved slot."
+    : "Click a vacant slot to select it.";
   buildPickerTable(room, mode);
   openModal("sched-picker-modal");
 }
 
+async function submitFacRequest() {
+  const name = document.getElementById("fac-name").value.trim();
+  const subj = document.getElementById("fac-subj").value.trim();
+  const group = document.getElementById("fac-group").value.trim();
+  const email = document.getElementById("fac-email").value.trim();
+  const rtype = document.getElementById("fac-reqtype").value;
+  const notes = document.getElementById("fac-notes").value.trim();
+  showAlert("fac-conflict", false);
+  showAlert("fac-warn", false);
+  if (!name || !subj || !group) {
+    toast("Please fill in Name, Course Code, and Group.");
+    return;
+  }
+
+  let room,
+    day,
+    time,
+    fromInfo = "";
+  if (rtype === "new") {
+    room = document.getElementById("fac-room").value;
+    day = facNewSlot.day;
+    time = facNewSlot.time;
+    if (!room || !day || !time) {
+      document.getElementById("fac-warn-msg").textContent =
+        "Please select a room and time slot.";
+      showAlert("fac-warn", true);
+      return;
+    }
+  } else {
+    const fr = document.getElementById("fac-from-room").value;
+    const tr = document.getElementById("fac-to-room").value;
+    if (!fr || !facFromSlot.day) {
+      document.getElementById("fac-warn-msg").textContent =
+        "Please select your current room and slot.";
+      showAlert("fac-warn", true);
+      return;
+    }
+    if (!tr || !facToSlot.day) {
+      document.getElementById("fac-warn-msg").textContent =
+        "Please select your destination room and new slot.";
+      showAlert("fac-warn", true);
+      return;
+    }
+    fromInfo = `\n[Change request — from: ${fr} · ${facFromSlot.day} · ${facFromSlot.time} → to: ${tr} · ${facToSlot.day} · ${facToSlot.time}]`;
+    room = tr;
+    day = facToSlot.day;
+    time = facToSlot.time;
+  }
+
+  try {
+    await API.post("requests", {
+      prof: name,
+      subj,
+      group,
+      email,
+      room,
+      day,
+      time,
+      notes: notes + fromInfo,
+    });
+    // Reset form
+    ["fac-name", "fac-subj", "fac-group", "fac-notes"].forEach(
+      (id) => (document.getElementById(id).value = ""),
+    );
+    document.getElementById("fac-email").value = "";
+    document.getElementById("fac-room").selectedIndex = 0;
+    document.getElementById("fac-reqtype").selectedIndex = 0;
+    facNewSlot = { day: null, time: null };
+    facFromSlot = { day: null, time: null };
+    facToSlot = { day: null, time: null };
+    hideEl("fac-new-slot-display");
+    hideEl("fac-from-display");
+    hideEl("fac-to-display");
+    document.getElementById("fac-new-zone").style.display = "";
+    document.getElementById("fac-change-zone").style.display = "none";
+    document.getElementById("fac-change-summary").classList.remove("show");
+    showAlert("fac-room-info", true);
+    toast("✅ Request submitted. The scheduling head will review it.");
+    // Reload bookings so grid updates
+    await loadData();
+  } catch (e) {
+    document.getElementById("fac-conflict-msg").textContent = e.message;
+    showAlert("fac-conflict", true);
+  }
+}
+
+// ── PICKER MODAL (shared for faculty & admin) ─────────────
 function buildPickerTable(room, mode) {
   const hd = document.getElementById("picker-hd");
   const bd = document.getElementById("picker-bd");
@@ -551,23 +1077,20 @@ function buildPickerTable(room, mode) {
     tc.textContent = t;
     tr.appendChild(tc);
     DAYS.forEach((d) => {
-      // All approved bookings for this room/day/time
       const roomBks = bookings.filter(
         (b) =>
           b.room === room &&
-          b.day === d &&
-          b.time === t &&
+          matchesDay(b.day, d) &&
+          timesOverlap(b.time, t) &&
           b.status === "approved",
       );
       const td = document.createElement("td");
       td.style.cssText = "padding:2px;vertical-align:top;height:44px";
       if (roomBks.length > 0) {
-        // Show chip(s) like the weekly schedule
         const inner = document.createElement("div");
         inner.style.cssText =
           "display:flex;flex-direction:column;gap:2px;height:100%";
-        const visible = roomBks.slice(0, MAX_VISIBLE);
-        visible.forEach((bk, i) => {
+        roomBks.slice(0, MAX_VISIBLE).forEach((bk, i) => {
           const c = getColor(i);
           const chip = document.createElement("div");
           chip.style.cssText = `background:${c.bg};border-left:2px solid ${c.border};color:${c.text};border-radius:4px;padding:2px 5px;font-size:9px;line-height:1.3;flex:1;min-height:0;overflow:hidden`;
@@ -575,11 +1098,11 @@ function buildPickerTable(room, mode) {
           chip.addEventListener("mouseenter", (e) => showTip(e, bk));
           chip.addEventListener("mouseleave", hideTip);
           if (mode === "from") {
-            // Clickable — user picks which booking to change
-            const isSel = fromSlot.day === d && fromSlot.time === t;
+            const isSel =
+              facFromSlot.day === d &&
+              normalizeTime(facFromSlot.time) === normalizeTime(t);
             chip.style.cursor = "pointer";
             chip.style.outline = isSel ? `2px solid ${c.border}` : "none";
-            chip.style.boxShadow = isSel ? `0 0 0 2px ${c.border}` : "";
             if (isSel) {
               const tick = document.createElement("div");
               tick.style.cssText =
@@ -588,32 +1111,27 @@ function buildPickerTable(room, mode) {
               chip.appendChild(tick);
             }
             chip.addEventListener("click", () => {
-              fromSlot = { day: d, time: t };
+              facFromSlot = { day: d, time: t };
               closeModal("sched-picker-modal");
-              const fromRoom = document.getElementById("pub-from-room").value;
-              showSlotDisplay("from-slot-display", `${fromRoom} · ${d} · ${t}`);
-              document.getElementById("from-room-hint").textContent =
-                "Slot selected. Reselect room dropdown to change.";
-              updateChangeSummaryNew();
+              showEl(
+                "fac-from-display",
+                `${document.getElementById("fac-from-room").value} · ${d} · ${t}`,
+              );
+              updateFacChangeSummary();
             });
           }
-          // mode==='to' or 'new': chips are read-only (slot is taken)
           inner.appendChild(chip);
         });
-        if (roomBks.length > MAX_VISIBLE) {
-          const more = document.createElement("div");
-          more.style.cssText =
-            "font-size:8px;color:var(--t3);text-align:center;padding-top:1px";
-          more.textContent = `+${roomBks.length - MAX_VISIBLE}`;
-          inner.appendChild(more);
-        }
         td.appendChild(inner);
       } else {
-        // Vacant slot — empty cell, clickable only for 'new' and 'to' modes
         if (mode === "new" || mode === "to") {
           const isSel =
-            (mode === "new" && newSlot.day === d && newSlot.time === t) ||
-            (mode === "to" && toSlot.day === d && toSlot.time === t);
+            (mode === "new" &&
+              facNewSlot.day === d &&
+              normalizeTime(facNewSlot.time) === normalizeTime(t)) ||
+            (mode === "to" &&
+              facToSlot.day === d &&
+              normalizeTime(facToSlot.time) === normalizeTime(t));
           td.style.cursor = "pointer";
           td.style.background = isSel ? "var(--green)" : "";
           td.addEventListener("mouseenter", () => {
@@ -631,35 +1149,24 @@ function buildPickerTable(room, mode) {
           }
           td.addEventListener("click", () => {
             if (mode === "new") {
-              newSlot = { day: d, time: t };
-              document.getElementById("pub-day").value = d;
-              document.getElementById("pub-time").value = t;
+              facNewSlot = { day: d, time: t };
               closeModal("sched-picker-modal");
-              showSlotDisplay(
-                "new-slot-display",
-                `${document.getElementById("pub-room").value} · ${d} · ${t}`,
+              showEl(
+                "fac-new-slot-display",
+                `${document.getElementById("fac-room").value} · ${d} · ${t}`,
               );
-              showAlert("pub-room-info", false);
+              showAlert("fac-room-info", false);
             } else {
-              toSlot = { day: d, time: t };
-              document.getElementById("pub-day").value = d;
-              document.getElementById("pub-time").value = t;
+              facToSlot = { day: d, time: t };
               closeModal("sched-picker-modal");
-              showSlotDisplay(
-                "to-slot-display",
-                `${document.getElementById("pub-to-room").value} · ${d} · ${t}`,
+              showEl(
+                "fac-to-display",
+                `${document.getElementById("fac-to-room").value} · ${d} · ${t}`,
               );
-              document.getElementById("to-room-hint").textContent =
-                "Slot selected. Reselect room dropdown to change.";
-              updateChangeSummaryNew();
+              updateFacChangeSummary();
             }
-            showAlert("pub-conflict", false);
-            showAlert("pub-warn", false);
-            // Rebuild table to update selected highlight
-            buildPickerTable(room, mode);
           });
         }
-        // 'from' mode + vacant: just empty, no interaction
       }
       tr.appendChild(td);
     });
@@ -667,185 +1174,7 @@ function buildPickerTable(room, mode) {
   });
 }
 
-// ── PUBLIC SUBMIT ──
-async function submitPubRequest() {
-  const name = document.getElementById("pub-name").value.trim();
-  const subj = document.getElementById("pub-subj").value.trim();
-  const group = document.getElementById("pub-group").value.trim();
-  const email = document.getElementById("pub-email").value.trim();
-  const reqtype = document.getElementById("pub-reqtype").value;
-  const notes = document.getElementById("pub-notes").value.trim();
-  let hasErr = false;
-  ["pub-name", "pub-subj", "pub-group"].forEach(clearErr);
-  showAlert("pub-conflict", false);
-  showAlert("pub-warn", false);
-  if (!name) {
-    setErr("pub-name");
-    hasErr = true;
-  }
-  if (!subj) {
-    setErr("pub-subj");
-    hasErr = true;
-  }
-  if (!group) {
-    setErr("pub-group");
-    hasErr = true;
-  }
-
-  let targetRoom,
-    day,
-    time,
-    fromInfo = "";
-  if (reqtype === "new") {
-    targetRoom = document.getElementById("pub-room").value;
-    day = newSlot.day;
-    time = newSlot.time;
-    if (!targetRoom) {
-      document.getElementById("pub-warn-msg").textContent =
-        "Please select a room.";
-      showAlert("pub-warn", true);
-      hasErr = true;
-    }
-    if (!day || !time) {
-      document.getElementById("pub-warn-msg").textContent =
-        "Please select a time slot by opening the room schedule.";
-      showAlert("pub-warn", true);
-      hasErr = true;
-    }
-  } else {
-    const fromRoom = document.getElementById("pub-from-room").value;
-    const toRoom = document.getElementById("pub-to-room").value;
-    targetRoom = toRoom || fromRoom;
-    day = toSlot.day || fromSlot.day;
-    time = toSlot.time || fromSlot.time;
-    if (!fromRoom || !fromSlot.day) {
-      document.getElementById("pub-warn-msg").textContent =
-        "Please select your current room and slot (From).";
-      showAlert("pub-warn", true);
-      hasErr = true;
-    }
-    if (!toRoom || !toSlot.day) {
-      document.getElementById("pub-warn-msg").textContent =
-        "Please select your destination room and new slot (To).";
-      showAlert("pub-warn", true);
-      hasErr = true;
-    }
-    if (fromRoom && fromSlot.day && toRoom && toSlot.day) {
-      fromInfo = `
-[Change request — from: ${fromRoom} · ${fromSlot.day} · ${fromSlot.time} → to: ${toRoom} · ${toSlot.day} · ${toSlot.time}]`;
-      targetRoom = toRoom;
-      day = toSlot.day;
-      time = toSlot.time;
-    }
-  }
-  if (hasErr) return;
-
-  const conflict = bookings.find(
-    (b) =>
-      b.room === targetRoom &&
-      b.day === day &&
-      b.time === time &&
-      b.status === "approved",
-  );
-  if (conflict) {
-    document.getElementById("pub-conflict-msg").textContent =
-      `${targetRoom} is already reserved on ${day} at ${time}. Please choose a different slot.`;
-    showAlert("pub-conflict", true);
-    return;
-  }
-  try {
-    await API.post("requests", {
-      prof: name,
-      subj,
-      group,
-      email,
-      room: targetRoom,
-      day,
-      time,
-      notes: notes + fromInfo,
-    });
-  } catch (e) {
-    if (!e.message.includes("Conflict")) {
-      /* silent — still show locally */
-    } else {
-      document.getElementById("pub-conflict-msg").textContent = e.message;
-      showAlert("pub-conflict", true);
-      return;
-    }
-  }
-  bookings.push({
-    id: Date.now(),
-    prof: name,
-    subj,
-    group,
-    email,
-    room: targetRoom,
-    day,
-    time,
-    notes: notes + fromInfo,
-    status: "pending",
-    actionAt: null,
-  });
-  ["pub-name", "pub-subj", "pub-group", "pub-notes"].forEach(
-    (id) => (document.getElementById(id).value = ""),
-  );
-  document.getElementById("pub-email").value = "";
-  document.getElementById("pub-room").selectedIndex = 0;
-  document.getElementById("pub-reqtype").selectedIndex = 0;
-  const fr = document.getElementById("pub-from-room");
-  if (fr) fr.selectedIndex = 0;
-  const tr = document.getElementById("pub-to-room");
-  if (tr) tr.selectedIndex = 0;
-  document.getElementById("pub-day").value = "";
-  document.getElementById("pub-time").value = "";
-  newSlot = { day: null, time: null };
-  fromSlot = { day: null, time: null };
-  toSlot = { day: null, time: null };
-  hideSlotDisplay("new-slot-display");
-  hideSlotDisplay("from-slot-display");
-  hideSlotDisplay("to-slot-display");
-  document.getElementById("new-sched-zone").style.display = "";
-  document.getElementById("change-sched-zone").style.display = "none";
-  document.getElementById("change-summary").classList.remove("show");
-  showAlert("pub-room-info", true);
-  updateBadge();
-  toast("✅ Request submitted. The scheduling head will review it.");
-}
-
-// ── LOGIN ──
-async function doLogin() {
-  const u = document.getElementById("l-user").value.trim();
-  const p = document.getElementById("l-pass").value;
-  try {
-    await API.post("login", { username: u, password: p });
-    showAlert("l-err", false);
-    await loadAdminData();
-    goScreen("admin");
-  } catch (e) {
-    showAlert("l-err", true);
-  }
-}
-async function loadAdminData() {
-  try {
-    const [r, b] = await Promise.all([
-      API.get("rooms"),
-      API.get("reservations", "status=all"),
-    ]);
-    rooms = r;
-    bookings = b;
-    populateAdminSelects();
-    renderDashboard();
-    renderAdminSched();
-    renderRoomsTbl();
-    renderBookingsTbl();
-    renderReqTbl();
-    updateBadge();
-  } catch (e) {
-    console.error("loadAdminData", e);
-  }
-}
-
-// ── ADMIN INIT ──
+// ── ADMIN INIT ────────────────────────────────────────────
 function initAdmin() {
   populateAdminSelects();
   renderDashboard();
@@ -855,6 +1184,7 @@ function initAdmin() {
   renderReqTbl();
   updateBadge();
 }
+
 function showAdminPg(id, el) {
   document.querySelectorAll(".pg").forEach((p) => p.classList.remove("active"));
   document
@@ -862,24 +1192,35 @@ function showAdminPg(id, el) {
     .forEach((b) => b.classList.remove("active"));
   document.getElementById("apg-" + id).classList.add("active");
   if (el) el.classList.add("active");
-  if (id === "schedule") renderAdminSched();
+  if (id === "schedule") {
+    renderAdminSched();
+    renderAdminGrid();
+  }
   if (id === "rooms") renderRoomsTbl();
   if (id === "reservations") renderBookingsTbl();
   if (id === "requests") renderReqTbl();
   if (id === "dashboard") renderDashboard();
 }
+
 function populateAdminSelects() {
   const rNames = rooms.map((r) => r.name);
-  document.getElementById("a-room-f").innerHTML =
+  const roomOpts =
     '<option value="">All Rooms</option>' +
     rNames.map((n) => `<option>${n}</option>`).join("");
+  ["a-room-f", "a-grid-room-f"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = roomOpts;
+  });
   document.getElementById("bk-room").innerHTML =
     '<option value="">Select room</option>' +
     rNames.map((n) => `<option>${n}</option>`).join("");
-  document.getElementById("bk-time").innerHTML =
-    '<option value="">Select time</option>' +
-    TIMES.map((t) => `<option>${t}</option>`).join("");
+  const sel = document.getElementById("export-room-select");
+  if (sel)
+    sel.innerHTML =
+      '<option value="">Choose a room...</option>' +
+      rNames.map((n) => `<option>${n}</option>`).join("");
 }
+
 function updateBadge() {
   const n = bookings.filter((b) => b.status === "pending").length;
   const b = document.getElementById("req-badge");
@@ -888,16 +1229,21 @@ function updateBadge() {
     b.style.display = n > 0 ? "inline" : "none";
   }
 }
+
 function renderDashboard() {
   const approved = bookings.filter((b) => b.status === "approved");
   const pending = bookings.filter((b) => b.status === "pending");
   const vacant = rooms.filter(
     (r) => !approved.some((b) => b.room === r.name),
   ).length;
+  const conflictIds = detectConflicts(approved);
+
   document.getElementById("ds-rooms").textContent = rooms.length;
   document.getElementById("ds-approved").textContent = approved.length;
   document.getElementById("ds-pending").textContent = pending.length;
   document.getElementById("ds-vacant").textContent = vacant;
+
+  // Pending requests table
   document.getElementById("dash-pending").innerHTML = pending.length
     ? pending
         .map(
@@ -906,14 +1252,51 @@ function renderDashboard() {
         )
         .join("")
     : `<tr><td colspan="6" class="empty">No pending requests.</td></tr>`;
+
+  // Conflicts section
+  const conflictEl = document.getElementById("dash-conflicts");
+  if (conflictEl) {
+    const conflictBks = approved.filter((b) => conflictIds.has(b.id));
+    conflictEl.innerHTML = conflictBks.length
+      ? conflictBks
+          .map(
+            (b) =>
+              `<tr style="background:#FEF0F0"><td><strong>${b.room}</strong></td><td>${b.subj}</td><td>${b.group || b.prof}</td><td>${b.day} · ${b.time}</td><td><button class="btn-a ed" onclick="openBookingModal(${b.id})" style="background:#D04040;color:#fff;border:none">Resolve</button></td></tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="5" class="empty" style="color:var(--green)">✅ No scheduling conflicts.</td></tr>`;
+  }
 }
+
+let adminSchedView = "weekly";
+function setAdminSchedView(view, btn) {
+  adminSchedView = view;
+  document
+    .querySelectorAll("#sched-view-weekly,#sched-view-grid")
+    .forEach((b) => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  document.getElementById("admin-weekly-view").style.display =
+    view === "weekly" ? "" : "none";
+  document.getElementById("admin-grid-view").style.display =
+    view === "grid" ? "" : "none";
+  if (view === "grid") renderAdminGrid();
+  else renderAdminSched();
+}
+
 function renderAdminSched() {
   buildSchedTable(
     document.getElementById("a-sched-hd"),
     document.getElementById("a-sched-bd"),
-    document.getElementById("a-room-f").value,
+    document.getElementById("a-room-f")?.value || "",
   );
 }
+function renderAdminGrid() {
+  buildGridView(
+    document.getElementById("admin-grid-wrap"),
+    document.getElementById("a-grid-room-f")?.value || "",
+  );
+}
+
 function renderRoomsTbl() {
   document.getElementById("rooms-tbl").innerHTML = rooms
     .map((r) => {
@@ -929,6 +1312,7 @@ function renderRoomsTbl() {
     })
     .join("");
 }
+
 function renderBookingsTbl() {
   const approved = bookings.filter((b) => b.status === "approved");
   document.getElementById("reservations-tbl").innerHTML = approved.length
@@ -945,7 +1329,8 @@ function renderBookingsTbl() {
         .join("")
     : `<tr><td colspan="7" class="empty">No approved reservations.</td></tr>`;
 }
-// ── SLOT OVERFLOW POPUP ──
+
+// ── SLOT POPUP ────────────────────────────────────────────
 let slotPopupOpen = false;
 function openSlotPopup(bks, time, day, e) {
   hideTip();
@@ -957,30 +1342,21 @@ function openSlotPopup(bks, time, day, e) {
   document.getElementById("sp-list").innerHTML = bks
     .map((b, i) => {
       const c = p[i % p.length];
-      const statusColor =
+      const sc =
         b.status === "approved"
           ? "var(--green)"
           : b.status === "pending"
             ? "var(--amber)"
             : "var(--red)";
-      const statusBg =
+      const sb =
         b.status === "approved"
           ? "var(--gl)"
           : b.status === "pending"
             ? "var(--al)"
             : "var(--rl)";
-      return `<div class="slot-popup-item">
-      <div class="slot-popup-dot" style="background:${c.border}"></div>
-      <div class="slot-popup-info">
-        <div class="pi-subj">${b.subj}</div>
-        <div class="pi-meta">${b.prof} · ${b.room}</div>
-        <div class="pi-group">${b.group || "—"}</div>
-        <span class="slot-popup-badge" style="background:${statusBg};color:${statusColor}">${b.status}</span>
-      </div>
-    </div>`;
+      return `<div class="slot-popup-item"><div class="slot-popup-dot" style="background:${c.border}"></div><div class="slot-popup-info"><div class="pi-subj">${b.subj}</div><div class="pi-meta">${b.prof} · ${b.room}</div><div class="pi-group">${b.group || "—"}</div><span class="slot-popup-badge" style="background:${sb};color:${sc}">${b.status}</span></div></div>`;
     })
     .join("");
-  // Position popup near the click
   popup.classList.add("open");
   const pw = popup.offsetWidth || 300,
     ph = popup.offsetHeight || 300;
@@ -1000,19 +1376,20 @@ function closeSlotPopup() {
   slotPopupOpen = false;
 }
 document.addEventListener("click", (e) => {
-  const popup = document.getElementById("slot-popup");
-  if (slotPopupOpen && !popup.contains(e.target)) closeSlotPopup();
+  const p = document.getElementById("slot-popup");
+  if (slotPopupOpen && !p.contains(e.target)) closeSlotPopup();
 });
 
-// ── REQUESTS SEARCH ──
+// ── REQUESTS ──────────────────────────────────────────────
 function clearReqSearch() {
   const el = document.getElementById("req-search");
   if (el) el.value = "";
   renderReqTbl();
 }
 function renderReqTbl() {
-  const searchEl = document.getElementById("req-search");
-  const q = (searchEl ? searchEl.value : "").toLowerCase().trim();
+  const q = (document.getElementById("req-search")?.value || "")
+    .toLowerCase()
+    .trim();
   const sorted = [...bookings].sort((a, b) => {
     if (a.status === "pending" && b.status !== "pending") return -1;
     if (a.status !== "pending" && b.status === "pending") return 1;
@@ -1037,7 +1414,6 @@ function renderReqTbl() {
     countEl.textContent = q
       ? `${filtered.length} result${filtered.length !== 1 ? "s" : ""} for "${q}"`
       : filtered.length + ` request${filtered.length !== 1 ? "s" : ""}`;
-  // Highlight match
   function hl(str) {
     if (!q || !str) return str || "—";
     const re = new RegExp(
@@ -1055,50 +1431,43 @@ function renderReqTbl() {
           (b) => `<tr>
     <td>${hl(b.prof)}</td><td>${hl(b.subj)}</td><td>${hl(b.group || "—")}</td><td>${hl(b.room)}</td>
     <td>${hl(b.day)} · ${b.time}</td>
-    <td>${
-      b.notes
-        ? `<button class="btn-a view-notes" onclick="viewNotes(${b.id})" style="font-size:11px">View Notes</button>`
-        : `<span title="No notes were added for this request." style="font-size:11px;color:var(--t3);cursor:default;padding:5px 0;display:inline-block">No Notes</span>`
-    }</td>
+    <td>${b.notes ? `<button class="btn-a view-notes" onclick="viewNotes(${b.id})" style="font-size:11px">View Notes</button>` : `<span style="font-size:11px;color:var(--t3)">No Notes</span>`}</td>
     <td><span class="tag ${b.status === "approved" ? "green" : b.status === "pending" ? "amber" : "red"}">${b.status}</span></td>
     <td style="font-size:11px;color:var(--t3)">${fmtDate(b.actionAt)}</td>
-    <td><div class="acts">${
-      b.status === "pending"
-        ? `<button class="btn-a ok" onclick="approveB(${b.id})">Approve</button><button class="btn-a rej" onclick="rejectB(${b.id})">Reject</button>`
-        : ""
-    }</div></td>
+    <td><div class="acts">${b.status === "pending" ? `<button class="btn-a ok" onclick="approveB(${b.id})">Approve</button><button class="btn-a rej" onclick="rejectB(${b.id})">Reject</button>` : ""}</div></td>
   </tr>`,
         )
         .join("")
     : `<tr><td colspan="9" class="empty">No results${q ? ` for "${q}"` : ""}.</td></tr>`;
 }
+
 function viewNotes(id) {
   const b = bookings.find((x) => x.id === id);
   if (!b) return;
-  const content = document.getElementById("notes-view-content");
+  const c = document.getElementById("notes-view-content");
   if (b.notes) {
-    content.className = "notes-view";
-    content.textContent = b.notes;
+    c.className = "notes-view";
+    c.textContent = b.notes;
   } else {
-    content.className = "notes-empty";
-    content.innerHTML =
-      "<span>📭</span><span>No notes were added for this request.</span>";
+    c.className = "notes-empty";
+    c.innerHTML = "<span>📭</span><span>No notes were added.</span>";
   }
   openModal("notes-modal");
 }
+
 function buildEmailBody(b, status) {
-  const actionWord = status === "approved" ? "APPROVED" : "REJECTED";
-  const body = `Dear ${b.prof},\n\nWe would like to inform you that your room reservation request has been ${actionWord}.\n\nREQUEST DETAILS\n───────────────────────────\nName: ${b.prof}\nSubject / Purpose: ${b.subj}\nGroup / Section / Org: ${b.group || "—"}\nRoom: ${b.room}\nDay: ${b.day}\nTime Slot: ${b.time}\nRequest Type: ${b.notes && b.notes.includes("Change request") ? "Change Existing Schedule" : "New Schedule"}\nDate of Action: ${new Date().toLocaleDateString("en-PH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}\n───────────────────────────\n${status === "approved" ? "Your reservation has been confirmed and is now reflected on the CBEA schedule. Please make sure to use the room only during your assigned time slot." : "Your request has not been approved at this time. If you have questions or would like to submit a new request, please visit the ACROSS CBEA scheduling portal."}\n\nFor concerns, please contact the CBEA Scheduling Head.\n\nRegards,\nAcademic ClassRoom Occupancy Scheduling System (ACROSS)\nCollege of Business Economics and Accountancy`;
-  return body;
+  const aw = status === "approved" ? "APPROVED" : "REJECTED";
+  return `Dear ${b.prof},\n\nYour room reservation request has been ${aw}.\n\nREQUEST DETAILS\n──────────────────────────\nName: ${b.prof}\nCourse Code: ${b.subj}\nGroup: ${b.group || "—"}\nRoom: ${b.room}\nDay: ${b.day}\nTime Slot: ${b.time}\nDate of Action: ${new Date().toLocaleDateString("en-PH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}\n──────────────────────────\n${status === "approved" ? "Your reservation has been confirmed. Please use the room only during your assigned time slot." : "Your request was not approved. Please submit a new request or contact the CBEA Scheduling Head."}\n\nRegards,\nAcademic ClassRoom Occupancy Scheduling System (ACROSS)\nCollege of Business Economics and Accountancy`;
 }
 function sendEmailNotif(b, status) {
   if (!b.email) return;
-  const subject = encodeURIComponent(
+  const sub = encodeURIComponent(
     `[ACROSS CBEA] Room Reservation ${status === "approved" ? "Approved ✅" : "Rejected ❌"} — ${b.subj}`,
   );
-  const body = encodeURIComponent(buildEmailBody(b, status));
-  window.open(`mailto:${b.email}?subject=${subject}&body=${body}`, "_blank");
+  const bod = encodeURIComponent(buildEmailBody(b, status));
+  window.open(`mailto:${b.email}?subject=${sub}&body=${bod}`, "_blank");
 }
+
 async function approveB(id) {
   try {
     await API.put("requests", { id, action: "approve" });
@@ -1126,7 +1495,7 @@ async function rejectB(id) {
   }
 }
 
-// ── ROOM CRUD ──
+// ── ROOM CRUD ─────────────────────────────────────────────
 function openRoomModal(id = null) {
   editRoomId = id;
   const r = id ? rooms.find((x) => String(x.id) === String(id)) : null;
@@ -1159,21 +1528,24 @@ async function saveRoom() {
     const oldRoom = editRoomId
       ? rooms.find((x) => String(x.id) === String(editRoomId))
       : null;
-    const payload = { name, type, cap, floor };
     if (editRoomId) {
       await API.put("rooms", {
-        ...payload,
+        name,
+        type,
+        cap,
+        floor,
         id: editRoomId,
         oldName: oldRoom?.name || name,
       });
-      toast("Room updated. All reservations updated.");
+      toast("Room updated.");
     } else {
-      await API.post("rooms", payload);
+      await API.post("rooms", { name, type, cap, floor });
       toast("Room added.");
     }
     closeModal("room-modal");
     await loadAdminData();
     populatePubSelects();
+    populateFacSelects();
     editRoomId = null;
   } catch (e) {
     document.getElementById("rm-err-msg").textContent = e.message;
@@ -1193,31 +1565,34 @@ async function deleteRoom(id) {
     await API.del("rooms", { id });
     await loadAdminData();
     populatePubSelects();
-    toast(`"${r.name}" and its reservations deleted.`);
+    populateFacSelects();
+    toast(`"${r.name}" deleted.`);
   } catch (e) {
     toast("⚠️ " + e.message);
   }
 }
 
-// ── BOOKING CRUD ──
+// ── BOOKING CRUD ──────────────────────────────────────────
 function checkBkConflict() {
   const room = document.getElementById("bk-room").value;
   const day = document.getElementById("bk-day").value;
   const time = document.getElementById("bk-time").value;
-  const conflictEl = document.getElementById("bk-conflict");
+  const el = document.getElementById("bk-conflict");
   if (room && day && time) {
     const c = bookings.find(
       (b) =>
         b.room === room &&
         b.day === day &&
-        b.time === time &&
+        normalizeTime(b.time) === normalizeTime(time) &&
         b.status === "approved" &&
         b.id !== editBookingId,
     );
-    conflictEl.style.display = c ? "" : "none";
-    conflictEl.style.display = c ? "flex" : "none";
+    el.style.display = c ? "flex" : "none";
+    if (c)
+      document.getElementById("bk-conflict-msg").textContent =
+        `${room} is already reserved on ${day} at ${time}.`;
   } else {
-    conflictEl.style.display = "none";
+    el.style.display = "none";
   }
 }
 function openBookingModal(id = null) {
@@ -1274,62 +1649,48 @@ async function deleteBooking(id) {
   }
 }
 
-// ── MODAL ──
-function openModal(id) {
-  document.getElementById(id).classList.add("open");
+// ── CLEAR MODALS ──────────────────────────────────────────
+function openClearModal(type) {
+  const isRooms = type === "rooms";
+  document.getElementById("clear-modal-title").textContent =
+    `⚠️ Clear All ${isRooms ? "Rooms" : "Reservations"}?`;
+  document.getElementById("clear-modal-msg").textContent = isRooms
+    ? "This will permanently delete ALL rooms and ALL reservations."
+    : "This will permanently delete ALL reservations.";
+  document.getElementById("clear-modal-sub").textContent = isRooms
+    ? `${rooms.length} rooms and ${bookings.length} reservations will be deleted.`
+    : `${bookings.length} reservations will be deleted.`;
+  const btn = document.getElementById("clear-modal-confirm");
+  btn.onclick = async () => {
+    try {
+      if (isRooms) {
+        await fetch(`${API.base}/rooms.php?all=1`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      } else {
+        await fetch(`${API.base}/reservations.php?all=1`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      }
+      closeModal("clear-modal");
+      await loadAdminData();
+      populatePubSelects();
+      populateFacSelects();
+      toast(
+        isRooms
+          ? "All rooms and reservations cleared."
+          : "All reservations cleared.",
+      );
+    } catch (e) {
+      toast("⚠️ " + e.message);
+    }
+  };
+  openModal("clear-modal");
 }
-function closeModal(id) {
-  document.getElementById(id).classList.remove("open");
-}
-document.querySelectorAll(".modal-ov").forEach((ov) =>
-  ov.addEventListener("click", (e) => {
-    if (e.target === ov) ov.classList.remove("open");
-  }),
-);
 
-// ── TOAST ──
-function toast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 3200);
-}
-
-// ── BACK TO TOP ──
-function getScrollEl() {
-  // On admin screen, the scrollable container is .admin-main; elsewhere it's window/body
-  const adminScreen = document.getElementById("screen-admin");
-  if (adminScreen && adminScreen.classList.contains("active")) {
-    return document.querySelector(".admin-main");
-  }
-  return null;
-}
-function backToTop() {
-  const el = getScrollEl();
-  if (el) {
-    el.scrollTo({ top: 0, behavior: "smooth" });
-  } else {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
-  }
-}
-function checkScrollPos() {
-  const btn = document.getElementById("back-to-top");
-  if (!btn) return;
-  const el = getScrollEl();
-  const scrolled = el
-    ? el.scrollTop
-    : window.scrollY || document.documentElement.scrollTop;
-  btn.classList.toggle("show", scrolled > 300);
-}
-window.addEventListener("scroll", checkScrollPos, { passive: true });
-// Also listen on admin-main scroll
-setTimeout(() => {
-  const am = document.querySelector(".admin-main");
-  if (am) am.addEventListener("scroll", checkScrollPos, { passive: true });
-}, 500);
-
-// ── VACANT MODAL (dashboard) ──
+// ── VACANT MODAL ──────────────────────────────────────────
 function showVacantModal() {
   const approved = new Set(
     bookings.filter((b) => b.status === "approved").map((b) => b.room),
@@ -1338,113 +1699,308 @@ function showVacantModal() {
   const list = document.getElementById("vacant-modal-list");
   if (!vacant.length) {
     list.innerHTML =
-      '<p style="color:var(--t3);padding:12px">No fully vacant rooms at this time.</p>';
+      '<p style="color:var(--t3);padding:12px">No fully vacant rooms.</p>';
     openModal("vacant-modal");
     return;
   }
   list.innerHTML =
-    `
-    <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Click a room to open its schedule in the request form.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:4px 0">` +
+    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:4px 0">` +
     vacant
       .map(
-        (r) => `
-    <div onclick="selectVacantRoom('${r.name.replace(/'/g, "\\'")}');closeModal('vacant-modal')"
-      style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px;cursor:pointer;transition:all .15s"
-      onmouseover="this.style.borderColor='var(--green)';this.style.background='var(--gl)'"
-      onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--s2)'">
-      <div style="font-weight:700;font-size:13px;margin-bottom:2px">${r.name}</div>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:6px">${r.type} · ${r.floor}</div>
-      <span class="tag green" style="font-size:10px">Vacant — click to use</span>
-    </div>`,
+        (r) =>
+          `<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px"><div style="font-weight:700;font-size:13px;margin-bottom:2px">${r.name}</div><div style="font-size:11px;color:var(--t3);margin-bottom:6px">${r.type} · ${r.floor}</div><span class="tag green" style="font-size:10px">Vacant</span></div>`,
       )
       .join("") +
     `</div>`;
   openModal("vacant-modal");
 }
-function selectVacantRoom(roomName) {
-  // Switch to landing screen if on admin
-  const onAdmin = document
-    .getElementById("screen-admin")
-    .classList.contains("active");
-  if (onAdmin) {
-    goScreen("landing");
-    // Wait for screen transition then set room
-    setTimeout(() => _doSelectVacantRoom(roomName), 100);
-  } else {
-    _doSelectVacantRoom(roomName);
+
+// ── CHANGE PASSWORD ───────────────────────────────────────
+async function changePassword() {
+  const target = document.getElementById("pw-target").value;
+  const newPass = document.getElementById("pw-new").value;
+  const confirm = document.getElementById("pw-confirm").value;
+  showAlert("pw-err", false);
+  showAlert("pw-ok", false);
+  if (!newPass || newPass.length < 6) {
+    document.getElementById("pw-err-msg").textContent =
+      "Password must be at least 6 characters.";
+    showAlert("pw-err", true);
+    return;
+  }
+  if (newPass !== confirm) {
+    document.getElementById("pw-err-msg").textContent =
+      "Passwords do not match.";
+    showAlert("pw-err", true);
+    return;
+  }
+  try {
+    await API.post("change_password", { target, password: newPass });
+    document.getElementById("pw-new").value = "";
+    document.getElementById("pw-confirm").value = "";
+    showAlert("pw-ok", true);
+    toast("✅ Password changed successfully.");
+  } catch (e) {
+    document.getElementById("pw-err-msg").textContent = e.message;
+    showAlert("pw-err", true);
   }
 }
-function _doSelectVacantRoom(roomName) {
-  smoothScrollTo("req-anchor");
-  populatePubSelects();
-  // Ensure new schedule mode
-  const reqtype = document.getElementById("pub-reqtype");
-  if (reqtype) reqtype.value = "new";
-  document.getElementById("new-sched-zone").style.display = "";
-  document.getElementById("change-sched-zone").style.display = "none";
-  const sel = document.getElementById("pub-room");
-  if (!sel) return;
-  sel.value = roomName;
-  // Auto-open picker
-  newSlot = { day: null, time: null };
-  hideSlotDisplay("new-slot-display");
-  showAlert("pub-room-info", false);
-  openPickerModal(roomName, "new");
-  // Highlight dropdown
-  sel.style.borderColor = "var(--green)";
-  sel.style.boxShadow = "0 0 0 3px rgba(244,121,32,.2)";
-  setTimeout(() => {
-    sel.style.borderColor = "";
-    sel.style.boxShadow = "";
-  }, 2000);
+
+// ── IMPORT ────────────────────────────────────────────────
+let importRows = [];
+
+function resetImport() {
+  document.getElementById("import-step1").style.display = "";
+  document.getElementById("import-step2").style.display = "none";
+  document.getElementById("import-loading").style.display = "none";
+  showAlert("import-err", false);
+  showAlert("import-info", true);
+  const fi = document.getElementById("import-file-input");
+  if (fi) fi.value = "";
+  importRows = [];
 }
 
-// ── CLEAR MODALS ──
-function openClearModal(type) {
-  const isRooms = type === "rooms";
-  document.getElementById("clear-modal-title").textContent =
-    `⚠️ Clear All ${isRooms ? "Rooms" : "Reservations"}?`;
-  document.getElementById("clear-modal-msg").textContent = isRooms
-    ? "This will permanently delete ALL rooms and ALL reservations from the system. This cannot be undone."
-    : "This will permanently delete ALL reservations (approved, pending, and rejected). Rooms will remain intact.";
-  document.getElementById("clear-modal-sub").textContent = isRooms
-    ? `You are about to delete ${rooms.length} rooms and ${bookings.length} reservations.`
-    : `You are about to delete ${bookings.length} reservations.`;
-  const btn = document.getElementById("clear-modal-confirm");
-  btn.onclick = () => {
-    if (isRooms) {
-      rooms = [];
-      bookings = [];
-    } else {
-      bookings = [];
-    }
-    closeModal("clear-modal");
-    populateAdminSelects();
-    populatePubSelects();
-    renderDashboard();
-    renderRoomsTbl();
-    renderBookingsTbl();
-    renderAdminSched();
-    renderReqTbl();
-    updateBadge();
-    toast(
-      isRooms
-        ? "All rooms and reservations cleared."
-        : "All reservations cleared.",
+async function handleImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  showAlert("import-err", false);
+  document.getElementById("import-step1").style.display = "none";
+  document.getElementById("import-loading").style.display = "";
+  document.getElementById("import-loading-msg").textContent =
+    "Uploading and reading your file...";
+
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    document.getElementById("import-loading-msg").textContent =
+      "AI is analyzing and mapping your schedule...";
+    const res = await API.upload("import", fd);
+    importRows = res.rows || [];
+    showImportPreview(res.ai);
+  } catch (e) {
+    document.getElementById("import-loading").style.display = "none";
+    document.getElementById("import-step1").style.display = "";
+    document.getElementById("import-err-msg").textContent = e.message;
+    showAlert("import-err", true);
+  }
+}
+
+function showImportPreview(aiUsed) {
+  document.getElementById("import-loading").style.display = "none";
+  document.getElementById("import-step2").style.display = "";
+
+  const valid = importRows.filter((r) => !r.flagged && !r.conflict);
+  const flagged = importRows.filter((r) => r.flagged);
+  const conflict = importRows.filter((r) => r.conflict);
+
+  document.getElementById("import-preview-title").textContent =
+    `Preview — ${importRows.length} entries found${aiUsed ? " (AI-processed)" : ""}`;
+  document.getElementById("import-counts").textContent =
+    `✅ ${valid.length} ready · ⚠️ ${flagged.length} flagged · 🔴 ${conflict.length} conflicts`;
+
+  // Check conflicts against current bookings
+  importRows.forEach((r) => {
+    if (r.flagged) return;
+    const c = bookings.find(
+      (b) =>
+        b.room === r.room &&
+        b.day === r.day &&
+        normalizeTime(b.time) === normalizeTime(r.time) &&
+        b.status === "approved",
     );
-  };
-  openModal("clear-modal");
+    r.conflict = !!c;
+  });
+
+  const bd = document.getElementById("import-preview-bd");
+  const roomOpts = rooms
+    .map((r) => `<option value="${r.name}">${r.name}</option>`)
+    .join("");
+  const dayOpts = [
+    "MWF",
+    "TTH",
+    "SAT",
+    "MW",
+    "MF",
+    "WF",
+    "M",
+    "T",
+    "W",
+    "TH",
+    "F",
+  ]
+    .map((d) => `<option value="${d}">${d}</option>`)
+    .join("");
+
+  bd.innerHTML = importRows
+    .map((r, i) => {
+      let cls = "ok",
+        statusTxt = "✅ Ready";
+      if (r.flagged) {
+        cls = "flagged";
+        statusTxt = `⚠️ ${r.flag_reason || "Needs review"}`;
+      } else if (r.conflict) {
+        cls = "conflict";
+        statusTxt = "🔴 Conflict — will skip";
+      }
+
+      if (r.flagged) {
+        const profF = `<input value="${(r.prof || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'prof',this.value)" style="width:100px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
+        const subjF = `<input value="${(r.subj || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'subj',this.value)" style="width:65px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
+        const groupF = `<input value="${(r.group || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'group',this.value)" style="width:75px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
+        const roomF = `<select onchange="updateImportRow(${i},'room',this.value)" style="font-size:10px;padding:2px 3px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)"><option value="${r.room || ""}">${r.room || "Select..."}</option>${roomOpts}</select>`;
+        const dayF = `<select onchange="updateImportRow(${i},'day',this.value)" style="font-size:10px;padding:2px 3px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)"><option value="${r.day || ""}">${r.day || "Select..."}</option>${dayOpts}</select>`;
+        const timeF = `<input value="${(r.time || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'time',this.value)" placeholder="08:00-09:00" style="width:75px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
+        const fixBtn = `<button onclick="validateImportRow(${i})" style="font-size:9px;padding:2px 6px;background:var(--green);color:#fff;border:none;border-radius:3px;cursor:pointer;white-space:nowrap">✓ Fix</button>`;
+        return `<tr class="${cls}" id="import-row-${i}">
+        <td style="font-size:10px">${i + 1}</td>
+        <td>${profF}</td><td>${subjF}</td><td>${groupF}</td>
+        <td>${roomF}</td><td>${dayF}</td><td>${timeF}</td>
+        <td style="font-size:10px">${statusTxt}<br>${fixBtn}</td>
+      </tr>`;
+      }
+      return `<tr class="${cls}" id="import-row-${i}">
+      <td style="font-size:10px">${i + 1}</td>
+      <td>${r.prof || "—"}</td><td>${r.subj || "—"}</td><td>${r.group || "—"}</td>
+      <td>${r.room || "—"}</td><td>${r.day || "—"}</td><td>${r.time || "—"}</td>
+      <td style="font-size:10px">${statusTxt}</td>
+    </tr>`;
+    })
+    .join("");
+
+  const readyCount = importRows.filter((r) => !r.flagged && !r.conflict).length;
+  document.getElementById("import-confirm-btn").textContent =
+    `✅ Confirm Import (${readyCount} entries)`;
 }
 
-// ── EXPORT ──
+async function confirmImport() {
+  const toImport = importRows.filter((r) => !r.flagged && !r.conflict);
+  if (!toImport.length) {
+    toast("No valid entries to import.");
+    return;
+  }
+  try {
+    const res = await API.post("import", { rows: toImport });
+    closeModal("import-modal");
+    // Reload all data and re-render every view
+    await loadAdminData();
+    await loadData(); // also refresh public/faculty data
+    renderAdminSched();
+    renderAdminGrid();
+    renderPubSched();
+    renderVacantGrid();
+    if (
+      document.getElementById("screen-faculty").classList.contains("active")
+    ) {
+      renderFacSched();
+      renderFacGrid();
+    }
+    toast(
+      `✅ Imported ${res.inserted} entries.${res.skipped > 0 ? ` ${res.skipped} skipped.` : ""}`,
+    );
+    resetImport();
+  } catch (e) {
+    toast("⚠️ Import failed: " + e.message);
+  }
+}
+
+// Quick add room from import preview
+async function quickAddRoom(roomName, rowIdx) {
+  if (!roomName) return;
+  try {
+    await API.post("rooms", {
+      name: roomName,
+      type: "Lecture Room",
+      cap: 40,
+      floor: "Ground Floor",
+    });
+    await loadAdminData();
+    // Mark row as no longer flagged
+    if (importRows[rowIdx]) {
+      importRows[rowIdx].flagged = false;
+      importRows[rowIdx].flag_reason = "";
+    }
+    showImportPreview(false);
+    toast(`✅ Room "${roomName}" added.`);
+  } catch (e) {
+    toast(`⚠️ Could not add room: ${e.message}`);
+  }
+}
+
+// Update import row field inline
+function updateImportRow(idx, field, value) {
+  if (importRows[idx]) importRows[idx][field] = value.trim();
+}
+
+// Validate and unflag a fixed row
+function validateImportRow(idx) {
+  const r = importRows[idx];
+  if (!r) return;
+  const missing = [];
+  if (!r.prof) missing.push("Faculty");
+  if (!r.subj) missing.push("Course Code");
+  if (!r.room) missing.push("Room");
+  if (!r.day) missing.push("Day");
+  if (!r.time) missing.push("Time");
+  if (missing.length) {
+    toast(`⚠️ Row ${idx + 1} still missing: ${missing.join(", ")}`);
+    return;
+  }
+  // Check conflict
+  const c = bookings.find(
+    (b) =>
+      b.room === r.room &&
+      b.day === r.day &&
+      b.time === r.time &&
+      b.status === "approved",
+  );
+  if (c) {
+    r.flagged = true;
+    r.flag_reason = "Conflict with existing booking";
+    r.conflict = true;
+  } else {
+    r.flagged = false;
+    r.flag_reason = "";
+    r.conflict = false;
+  }
+  showImportPreview(false);
+  toast(
+    r.flagged
+      ? `⚠️ Row ${idx + 1} has a conflict.`
+      : `✅ Row ${idx + 1} is ready to import.`,
+  );
+}
+
+// Drag and drop for import
+const dropZone = document.getElementById("import-drop");
+if (dropZone) {
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = "var(--green)";
+  });
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.style.borderColor = "";
+  });
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = "";
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const fi = document.getElementById("import-file-input");
+      fi.files = e.dataTransfer.files;
+      handleImportFile(fi);
+    }
+  });
+}
+
+// ── EXPORT ────────────────────────────────────────────────
 let exportType = "rooms";
 function initExport() {
   setExportType("rooms", document.querySelector('[data-export="rooms"]'));
   const sel = document.getElementById("export-room-select");
-  sel.innerHTML =
-    '<option value="">Choose a room...</option>' +
-    rooms.map((r) => `<option>${r.name}</option>`).join("");
+  if (sel)
+    sel.innerHTML =
+      '<option value="">Choose a room...</option>' +
+      rooms.map((r) => `<option>${r.name}</option>`).join("");
 }
 function setExportType(type, btn) {
   exportType = type;
@@ -1459,10 +2015,10 @@ function setExportType(type, btn) {
 function renderExportPreview() {
   const wrap = document.getElementById("export-preview");
   if (exportType === "rooms") {
-    const rows = rooms.slice(0, 10);
     wrap.innerHTML =
       `<table><thead><tr><th>Room Name</th><th>Type</th><th>Capacity</th><th>Location</th><th>Status</th></tr></thead><tbody>` +
-      rows
+      rooms
+        .slice(0, 10)
         .map((r) => {
           const hasB = bookings.some(
             (b) => b.room === r.name && b.status === "approved",
@@ -1475,26 +2031,25 @@ function renderExportPreview() {
         ? `<p style="color:var(--t3);font-size:11px;padding:8px 0">... and ${rooms.length - 10} more rows</p>`
         : "");
   } else if (exportType === "all") {
-    const approved = bookings
-      .filter((b) => b.status === "approved")
-      .slice(0, 10);
+    const approved = bookings.filter((b) => b.status === "approved");
     wrap.innerHTML =
-      `<table><thead><tr><th>Name</th><th>Subject</th><th>Group</th><th>Room</th><th>Day</th><th>Time</th><th>Status</th></tr></thead><tbody>` +
+      `<table><thead><tr><th>Faculty</th><th>Course</th><th>Group</th><th>Room</th><th>Day</th><th>Time</th></tr></thead><tbody>` +
       approved
+        .slice(0, 10)
         .map(
           (b) =>
-            `<tr><td>${b.prof}</td><td>${b.subj}</td><td>${b.group || "—"}</td><td>${b.room}</td><td>${b.day}</td><td>${b.time}</td><td>${b.status}</td></tr>`,
+            `<tr><td>${b.prof}</td><td>${b.subj}</td><td>${b.group || "—"}</td><td>${b.room}</td><td>${b.day}</td><td>${b.time}</td></tr>`,
         )
         .join("") +
       `</tbody></table>` +
-      (bookings.filter((b) => b.status === "approved").length > 10
-        ? `<p style="color:var(--t3);font-size:11px;padding:8px 0">... and ${bookings.filter((b) => b.status === "approved").length - 10} more rows</p>`
+      (approved.length > 10
+        ? `<p style="color:var(--t3);font-size:11px;padding:8px 0">... and ${approved.length - 10} more rows</p>`
         : "");
   } else if (exportType === "room-sched") {
     const room = document.getElementById("export-room-select").value;
     if (!room) {
       wrap.innerHTML =
-        '<p style="color:var(--t3);font-size:12px">Select a room to preview its schedule.</p>';
+        '<p style="color:var(--t3);font-size:12px">Select a room to preview.</p>';
       return;
     }
     const rows = bookings.filter(
@@ -1505,7 +2060,7 @@ function renderExportPreview() {
       return;
     }
     wrap.innerHTML =
-      `<p style="font-size:11px;font-weight:700;margin-bottom:6px;color:var(--t2)">${room} — ${rows.length} reservation${rows.length !== 1 ? "s" : ""}</p><table><thead><tr><th>Day</th><th>Time</th><th>Subject</th><th>Name</th><th>Group</th></tr></thead><tbody>` +
+      `<table><thead><tr><th>Day</th><th>Time</th><th>Course</th><th>Faculty</th><th>Group</th></tr></thead><tbody>` +
       rows
         .map(
           (b) =>
@@ -1536,8 +2091,8 @@ function doExport(fmt) {
     filename = "ACROSS_CBEA_Rooms";
   } else if (exportType === "all") {
     headers = [
-      "Name",
-      "Subject",
+      "Faculty",
+      "Course Code",
       "Group",
       "Room",
       "Day",
@@ -1564,7 +2119,7 @@ function doExport(fmt) {
       toast("Please select a room first.");
       return;
     }
-    headers = ["Day", "Time", "Subject", "Name", "Group"];
+    headers = ["Day", "Time", "Course Code", "Faculty", "Group"];
     rows = bookings
       .filter((b) => b.room === room && b.status === "approved")
       .map((b) => [b.day, b.time, b.subj, b.prof, b.group || ""]);
@@ -1581,7 +2136,6 @@ function doExport(fmt) {
     a.click();
     toast("CSV exported.");
   } else {
-    // Simple HTML table download as .xls (opens in Excel)
     const table =
       "<table><tr>" +
       headers.map((h) => `<th>${h}</th>`).join("") +
@@ -1590,7 +2144,7 @@ function doExport(fmt) {
         .map((r) => "<tr>" + r.map((v) => `<td>${v}</td>`).join("") + "</tr>")
         .join("") +
       "</table>";
-    const html = `<html><head><meta charset="UTF-8"><style>th{background:#1C5C38;color:#fff;padding:6px 10px;font-size:12px}td{padding:5px 10px;font-size:12px;border:1px solid #ccc}tr:nth-child(even)td{background:#f5f5f5}</style></head><body>${table}</body></html>`;
+    const html = `<html><head><meta charset="UTF-8"><style>th{background:#F47920;color:#fff;padding:6px 10px;font-size:12px}td{padding:5px 10px;font-size:12px;border:1px solid #ccc}tr:nth-child(even)td{background:#f5f5f5}</style></head><body>${table}</body></html>`;
     const blob = new Blob([html], { type: "application/vnd.ms-excel" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1600,15 +2154,58 @@ function doExport(fmt) {
   }
 }
 
-// ── INIT ──
-populatePubSelects();
-renderPubSched();
-renderVacantGrid();
-showAlert("pub-room-info", true);
-// Init zone visibility
-document.getElementById("new-sched-zone").style.display = "";
-document.getElementById("change-sched-zone").style.display = "none";
-// ── INIT ──
-document.addEventListener("DOMContentLoaded", () => {
-  loadData();
+// ── MODAL ─────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add("open");
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove("open");
+}
+document.querySelectorAll(".modal-ov").forEach((ov) =>
+  ov.addEventListener("click", (e) => {
+    if (e.target === ov) ov.classList.remove("open");
+  }),
+);
+
+// ── TOAST ─────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+// ── BACK TO TOP ───────────────────────────────────────────
+function getScrollEl() {
+  const a = document.getElementById("screen-admin");
+  if (a && a.classList.contains("active"))
+    return document.querySelector(".admin-main");
+  return null;
+}
+function backToTop() {
+  const el = getScrollEl();
+  if (el) el.scrollTo({ top: 0, behavior: "smooth" });
+  else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+function checkScrollPos() {
+  const btn = document.getElementById("back-to-top");
+  if (!btn) return;
+  const el = getScrollEl();
+  const s = el
+    ? el.scrollTop
+    : window.scrollY || document.documentElement.scrollTop;
+  btn.classList.toggle("show", s > 300);
+}
+window.addEventListener("scroll", checkScrollPos, { passive: true });
+setTimeout(() => {
+  const am = document.querySelector(".admin-main");
+  if (am) am.addEventListener("scroll", checkScrollPos, { passive: true });
+}, 500);
+
+// ── INIT ──────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadData();
+  showAlert("import-info", true);
 });

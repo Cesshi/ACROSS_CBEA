@@ -188,7 +188,7 @@ if ($method === 'PUT') {
 
 // ── DELETE ────────────────────────────────────────────────
 if ($method === 'DELETE') {
-    if (isset($_GET['all'])) {
+    if (isset($_GET['all']) || !empty($body['all'])) {
         $conn->query('DELETE FROM reservations');
         echo json_encode(['success' => true]);
         $conn->close(); exit();
