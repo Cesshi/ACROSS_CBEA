@@ -1,0 +1,1707 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>ACROSS — CBEA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,300;9..144,600;9..144,700&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- TOOLTIP -->
+    <div class="tooltip" id="tooltip">
+      <div class="tt-subj" id="tt-subj"></div>
+      <div class="tt-row">
+        <span class="tt-lbl">Room</span
+        ><span class="tt-val" id="tt-room"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Faculty</span
+        ><span class="tt-val" id="tt-prof"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Group</span
+        ><span class="tt-val" id="tt-group"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Day</span><span class="tt-val" id="tt-day"></span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-lbl">Time</span
+        ><span class="tt-val" id="tt-time"></span>
+      </div>
+    </div>
+
+    <!-- NOTES MODAL -->
+    <div class="modal-ov" id="notes-modal">
+      <div class="modal" style="max-width: 400px">
+        <div class="modal-hd">
+          <h2>Request Notes</h2>
+          <button class="modal-x" onclick="closeModal('notes-modal')">×</button>
+        </div>
+        <p style="font-size: 12px; color: var(--t2); margin-bottom: 10px">
+          Notes from the requestee:
+        </p>
+        <div class="notes-view" id="notes-view-content"></div>
+        <div class="divider"></div>
+        <button class="btn-save" onclick="closeModal('notes-modal')">
+          Close
+        </button>
+      </div>
+    </div>
+
+    <!-- ROOM MODAL -->
+    <div class="modal-ov" id="room-modal">
+      <div class="modal">
+        <div class="modal-hd">
+          <h2 id="rm-title">Add Room</h2>
+          <button class="modal-x" onclick="closeModal('room-modal')">×</button>
+        </div>
+        <div class="form-grid">
+          <div class="fg">
+            <label class="lbl">Room Name</label
+            ><input type="text" id="rm-name" placeholder="e.g. CBEA 101" />
+          </div>
+          <div class="fg">
+            <label class="lbl">Type</label
+            ><select id="rm-type">
+              <option>Lecture Room</option>
+              <option>Computer Lab</option>
+              <option>Conference Room</option>
+              <option>Function Hall</option>
+              <option>AVR</option>
+              <option>Auditorium</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="lbl">Capacity</label
+            ><input type="number" id="rm-cap" placeholder="40" />
+          </div>
+          <div class="fg">
+            <label class="lbl">Location</label
+            ><input type="text" id="rm-floor" placeholder="Ground Floor" />
+          </div>
+        </div>
+        <div class="alert danger" id="rm-err">
+          <span class="alert-icon">🚫</span><span id="rm-err-msg"></span>
+        </div>
+        <div class="divider"></div>
+        <button class="btn-save" onclick="saveRoom()">Save Room</button>
+        <button class="btn-cancel" onclick="closeModal('room-modal')">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- BOOKING MODAL -->
+    <div class="modal-ov" id="reservation-modal">
+      <div class="modal">
+        <div class="modal-hd">
+          <h2 id="bk-title">Add Reservation</h2>
+          <button class="modal-x" onclick="closeModal('reservation-modal')">
+            ×
+          </button>
+        </div>
+        <div class="form-grid">
+          <div class="fg">
+            <label class="lbl">Faculty Name</label
+            ><input type="text" id="bk-prof" placeholder="Prof. Reyes" />
+          </div>
+          <div class="fg">
+            <label class="lbl">Course Code</label
+            ><input type="text" id="bk-subj" placeholder="ACC 194" />
+          </div>
+          <div class="fg">
+            <label class="lbl">Course / Year / Section</label
+            ><input type="text" id="bk-group" placeholder="BS ACC 2A" />
+          </div>
+          <div class="fg">
+            <label class="lbl">Room</label
+            ><select id="bk-room" onchange="checkBkConflict()"></select>
+          </div>
+          <div class="fg">
+            <label class="lbl">Day Pattern</label>
+            <select id="bk-day" onchange="checkBkConflict()">
+              <option value="">Select</option>
+              <optgroup label="Patterns">
+                <option>MWF</option>
+                <option>TTH</option>
+                <option>SAT</option>
+                <option>MW</option>
+                <option>MF</option>
+                <option>WF</option>
+              </optgroup>
+              <optgroup label="Single Days">
+                <option value="M">M (Monday)</option>
+                <option value="T">T (Tuesday)</option>
+                <option value="W">W (Wednesday)</option>
+                <option value="TH">TH (Thursday)</option>
+                <option value="F">F (Friday)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="lbl">Time Slot</label
+            ><input
+              type="text"
+              id="bk-time"
+              placeholder="e.g. 07:30-09:00"
+              onchange="checkBkConflict()"
+            />
+          </div>
+        </div>
+        <div class="alert danger" id="bk-conflict" style="display: none">
+          <span class="alert-icon">🚫</span
+          ><span id="bk-conflict-msg"
+            >This room is already reserved at that time.</span
+          >
+        </div>
+        <div class="divider"></div>
+        <button class="btn-save" onclick="saveBooking()">
+          Save Reservation
+        </button>
+        <button class="btn-cancel" onclick="closeModal('reservation-modal')">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div class="modal-ov" id="import-modal">
+      <div class="modal" style="max-width: 900px; padding: 0; overflow: hidden">
+        <div
+          class="modal-hd"
+          style="padding: 16px 20px; border-bottom: 1px solid var(--border)"
+        >
+          <div>
+            <h2>Import Schedule</h2>
+            <p style="font-size: 12px; color: var(--t2); margin-top: 2px">
+              Upload an Excel or CSV file to auto-generate the schedule using
+              AI.
+            </p>
+          </div>
+          <button class="modal-x" onclick="closeModal('import-modal')">
+            ×
+          </button>
+        </div>
+        <div id="import-body" style="padding: 20px">
+          <!-- Step 1: Upload -->
+          <div id="import-step1">
+            <div
+              class="import-drop"
+              id="import-drop"
+              onclick="document.getElementById('import-file-input').click()"
+            >
+              <div style="font-size: 32px; margin-bottom: 8px">📂</div>
+              <div style="font-weight: 600; margin-bottom: 4px">
+                Click to upload or drag & drop
+              </div>
+              <div style="font-size: 12px; color: var(--t3)">
+                .xlsx, .xls, or .csv — Faculty workload format
+              </div>
+            </div>
+            <input
+              type="file"
+              id="import-file-input"
+              accept=".xlsx,.xls,.csv"
+              style="display: none"
+              onchange="handleImportFile(this)"
+            />
+            <div class="alert info" id="import-info" style="margin-top: 12px">
+              <span class="alert-icon">ℹ️</span
+              ><span
+                >The AI will read your file and map each entry to the correct
+                room, day pattern, and time slot.</span
+              >
+            </div>
+            <div class="alert danger" id="import-err" style="margin-top: 12px">
+              <span class="alert-icon">🚫</span
+              ><span id="import-err-msg"></span>
+            </div>
+          </div>
+          <!-- Step 2: Preview -->
+          <div id="import-step2" style="display: none">
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+              "
+            >
+              <div>
+                <strong id="import-preview-title">Preview</strong>
+                <span
+                  style="font-size: 12px; color: var(--t2); margin-left: 8px"
+                  id="import-counts"
+                ></span>
+              </div>
+              <div style="display: flex; gap: 8px">
+                <button class="btn-ghost" onclick="resetImport()">
+                  ← Back
+                </button>
+                <button
+                  class="btn-save"
+                  id="import-confirm-btn"
+                  onclick="confirmImport()"
+                >
+                  ✅ Confirm Import
+                </button>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--t3); margin-bottom: 8px">
+              🔴 Red rows have conflicts or missing data and will be skipped. ✅
+              Green rows will be imported.
+            </div>
+            <div style="overflow-x: auto; max-height: 400px; overflow-y: auto">
+              <table
+                class="data"
+                id="import-preview-tbl"
+                style="font-size: 11px"
+              >
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Faculty</th>
+                    <th>Course Code</th>
+                    <th>Group</th>
+                    <th>Room</th>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="import-preview-bd"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Loading -->
+          <div
+            id="import-loading"
+            style="display: none; text-align: center; padding: 40px"
+          >
+            <div style="font-size: 32px; margin-bottom: 12px">🤖</div>
+            <div
+              style="font-weight: 600; margin-bottom: 4px"
+              id="import-loading-msg"
+            >
+              Reading your file...
+            </div>
+            <div style="font-size: 12px; color: var(--t3)">
+              The AI is analyzing and mapping your schedule data.
+            </div>
+            <div class="import-spinner" style="margin: 16px auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSWORD MODAL -->
+    <div class="modal-ov" id="password-modal">
+      <div class="modal" style="max-width: 420px">
+        <div class="modal-hd">
+          <h2>Change Password</h2>
+          <button class="modal-x" onclick="closeModal('password-modal')">
+            ×
+          </button>
+        </div>
+        <div style="margin-bottom: 14px">
+          <label class="lbl">Account</label>
+          <select id="pw-target" style="width: 100%; margin-top: 6px">
+            <option value="admin">Admin (admin)</option>
+            <option value="faculty">Faculty (faculty)</option>
+          </select>
+        </div>
+        <div class="fg" style="margin-bottom: 14px">
+          <label class="lbl">New Password</label>
+          <input
+            type="password"
+            id="pw-new"
+            placeholder="Min. 6 characters"
+            style="margin-top: 6px"
+          />
+        </div>
+        <div class="fg" style="margin-bottom: 14px">
+          <label class="lbl">Confirm Password</label>
+          <input
+            type="password"
+            id="pw-confirm"
+            placeholder="Re-enter password"
+            style="margin-top: 6px"
+          />
+        </div>
+        <div class="alert danger" id="pw-err" style="margin-bottom: 12px">
+          <span class="alert-icon">🚫</span><span id="pw-err-msg"></span>
+        </div>
+        <div class="alert info" id="pw-ok" style="margin-bottom: 12px">
+          <span class="alert-icon">✅</span
+          ><span>Password changed successfully.</span>
+        </div>
+        <div class="divider"></div>
+        <button class="btn-save" onclick="changePassword()">
+          Save Password
+        </button>
+        <button class="btn-cancel" onclick="closeModal('password-modal')">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- EXPORT MODAL -->
+    <div class="modal-ov" id="export-modal">
+      <div class="modal" style="max-width: 600px">
+        <div class="modal-hd">
+          <h2>Export Data</h2>
+          <button class="modal-x" onclick="closeModal('export-modal')">
+            ×
+          </button>
+        </div>
+        <div
+          style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap"
+        >
+          <button
+            class="vacant-filter-btn active"
+            data-export="rooms"
+            onclick="setExportType('rooms', this)"
+          >
+            🏫 Rooms
+          </button>
+          <button
+            class="vacant-filter-btn"
+            data-export="all"
+            onclick="setExportType('all', this)"
+          >
+            📋 All Reservations
+          </button>
+          <button
+            class="vacant-filter-btn"
+            data-export="room-sched"
+            onclick="setExportType('room-sched', this)"
+          >
+            📅 Room Schedule
+          </button>
+        </div>
+        <div id="export-room-picker" style="display: none; margin-bottom: 12px">
+          <label class="lbl">Select Room</label>
+          <select
+            id="export-room-select"
+            onchange="renderExportPreview()"
+            style="margin-top: 6px"
+          ></select>
+        </div>
+        <div id="export-preview-wrap">
+          <p style="font-size: 12px; color: var(--t2); margin-bottom: 8px">
+            Preview
+          </p>
+          <div class="export-preview" id="export-preview">
+            <p style="color: var(--t3); font-size: 12px">
+              Select an export type above.
+            </p>
+          </div>
+        </div>
+        <div class="export-btn-row">
+          <button class="btn-save" onclick="doExport('xlsx')">
+            ⬇ Export as Excel (.xlsx)
+          </button>
+          <button class="btn-ghost" onclick="doExport('csv')">
+            ⬇ Export as CSV
+          </button>
+          <button class="btn-cancel" onclick="closeModal('export-modal')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLEAR CONFIRM MODAL -->
+    <div class="modal-ov" id="clear-modal">
+      <div class="modal" style="max-width: 420px">
+        <div class="modal-hd">
+          <h2 id="clear-modal-title">⚠️ Are you sure?</h2>
+          <button class="modal-x" onclick="closeModal('clear-modal')">×</button>
+        </div>
+        <div class="alert caution show" style="margin-bottom: 16px">
+          <span class="alert-icon">⚠️</span
+          ><span id="clear-modal-msg">This action cannot be undone.</span>
+        </div>
+        <p
+          style="font-size: 13px; color: var(--t2); margin-bottom: 20px"
+          id="clear-modal-sub"
+        ></p>
+        <div style="display: flex; gap: 10px">
+          <button class="btn-danger" id="clear-modal-confirm">
+            Yes, proceed
+          </button>
+          <button class="btn-cancel" onclick="closeModal('clear-modal')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VACANT ROOMS MODAL -->
+    <div class="modal-ov" id="vacant-modal">
+      <div class="modal" style="max-width: 560px">
+        <div class="modal-hd">
+          <h2>Vacant Rooms</h2>
+          <button class="modal-x" onclick="closeModal('vacant-modal')">
+            ×
+          </button>
+        </div>
+        <div id="vacant-modal-list"></div>
+      </div>
+    </div>
+
+    <!-- SLOT OVERFLOW POPUP -->
+    <div class="slot-popup" id="slot-popup">
+      <div class="slot-popup-hd">
+        <h4 id="sp-title">All Reservations</h4>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span id="sp-count"></span>
+          <button class="slot-popup-x" onclick="closeSlotPopup()">×</button>
+        </div>
+      </div>
+      <div id="sp-list"></div>
+    </div>
+
+    <!-- SCHEDULE PICKER MODAL (faculty request form) -->
+    <div class="modal-ov" id="sched-picker-modal">
+      <div class="modal" style="max-width: 680px; padding: 0; overflow: hidden">
+        <div
+          class="modal-hd"
+          style="
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--s2);
+          "
+        >
+          <div>
+            <h2 id="sched-picker-title" style="font-size: 16px">
+              Select a Time Slot
+            </h2>
+            <p
+              id="sched-picker-sub"
+              style="font-size: 12px; color: var(--t2); margin-top: 2px"
+            >
+              Click a vacant slot to select it.
+            </p>
+          </div>
+          <button class="modal-x" onclick="closeModal('sched-picker-modal')">
+            ×
+          </button>
+        </div>
+        <div style="padding: 0 16px 16px; overflow-x: auto">
+          <table class="rmc-table" style="margin-top: 12px">
+            <thead>
+              <tr id="picker-hd"></tr>
+            </thead>
+            <tbody id="picker-bd"></tbody>
+          </table>
+        </div>
+        <div
+          style="
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            color: var(--t2);
+            background: var(--s2);
+          "
+        >
+          <span style="display: flex; align-items: center; gap: 5px"
+            ><span
+              style="
+                width: 11px;
+                height: 11px;
+                border-radius: 2px;
+                background: #e8f8f0;
+                border: 1px solid #2a9a5a;
+                display: inline-block;
+              "
+            ></span
+            >Vacant</span
+          >
+          <span style="display: flex; align-items: center; gap: 5px"
+            ><span
+              style="
+                width: 11px;
+                height: 11px;
+                border-radius: 2px;
+                background: #fee8e8;
+                border: 1px solid #d04040;
+                display: inline-block;
+              "
+            ></span
+            >Reserved</span
+          >
+          <span style="display: flex; align-items: center; gap: 5px"
+            ><span
+              style="
+                width: 11px;
+                height: 11px;
+                border-radius: 2px;
+                background: #f47920;
+                display: inline-block;
+              "
+            ></span
+            >Selected</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- ══ LANDING (Public — read only) ══ -->
+    <div class="screen active" id="screen-landing">
+      <nav class="top-nav">
+        <div class="nav-brand">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <img
+              src="img/logo_mmsu1.png"
+              style="
+                width: 28px;
+                height: 28px;
+                object-fit: contain;
+                border-radius: 50%;
+                "
+              alt="MMSU"
+            />
+            <div class="nav-logo" style="background: transparent; padding: 0">
+              <img
+                src="img/logo_cbea2.png"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: contain;
+                  border-radius: inherit;
+                "
+                alt="CBEA"
+              />
+            </div>
+          </div>
+          <span class="nav-title">ACROSS</span>
+          <span class="nav-sub">CBEA</span>
+        </div>
+        <div class="nav-r">
+          <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
+          <button class="btn-primary" onclick="goScreen('login')">Login</button>
+        </div>
+      </nav>
+
+      <!-- HERO — split layout -->
+      <div class="land-hero">
+        <!-- Left: text column -->
+        <div class="land-hero-left">
+          <div class="hero-eyebrow">
+            <span class="hero-eyebrow-dot"></span>
+            MMSU · CBEA · Live System
+          </div>
+          <div class="logo-row">
+            <div class="logo-big">
+              <img src="img/logo_mmsu1.png" alt="MMSU" />
+            </div>
+            <div class="logo-big">
+              <img src="img/logo_cbea2.png" alt="CBEA" />
+            </div>
+          </div>
+          <h1>
+            Smart room<br />
+            scheduling for<br />
+            <span class="accent-word">CBEA.</span>
+          </h1>
+          <p class="tagline">
+            View real-time classroom availability, check the weekly schedule,
+            and submit room requests — all in one place.
+          </p>
+          <p class="college">College of Business Economics and Accountancy · MMSU</p>
+          <div class="land-actions">
+            <button class="btn-primary" onclick="smoothScrollTo('sched-anchor')">
+              View Schedule
+            </button>
+            <button class="btn-outline-green" onclick="smoothScrollTo('sched-anchor')">
+              Find a Room
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: floating schedule preview card -->
+        <div class="land-hero-right">
+          <div class="hero-sched-card">
+            <div class="hero-sched-card-hd">
+              <h4>Weekly Schedule</h4>
+              <span class="hero-sched-live">Live</span>
+            </div>
+            <div class="hero-sched-body">
+              <div class="hero-sched-row confirmed-row">
+                <span class="hero-sched-time">7:00 – 8:00</span>
+                <div class="hero-sched-info">
+                  <div class="hero-sched-subj">Business Finance</div>
+                  <div class="hero-sched-meta">CBEA 101 · Prof. Reyes · Mon</div>
+                </div>
+                <span class="hero-sched-badge confirmed">Confirmed</span>
+              </div>
+              <div class="hero-sched-divider"></div>
+              <div class="hero-sched-row confirmed-row">
+                <span class="hero-sched-time">9:00 – 10:00</span>
+                <div class="hero-sched-info">
+                  <div class="hero-sched-subj">Accounting 101</div>
+                  <div class="hero-sched-meta">CBEA 101 · Prof. Cruz · Mon</div>
+                </div>
+                <span class="hero-sched-badge confirmed">Confirmed</span>
+              </div>
+              <div class="hero-sched-divider"></div>
+              <div class="hero-sched-row available-row">
+                <span class="hero-sched-time">10:00 – 11:00</span>
+                <div class="hero-sched-info">
+                  <div class="hero-sched-subj">CBEA 103</div>
+                  <div class="hero-sched-meta">Thu · Open slot</div>
+                </div>
+                <span class="hero-sched-badge available">Available</span>
+              </div>
+              <div class="hero-sched-divider"></div>
+              <div class="hero-sched-row confirmed-row">
+                <span class="hero-sched-time">1:00 – 2:00</span>
+                <div class="hero-sched-info">
+                  <div class="hero-sched-subj">Marketing Mgmt</div>
+                  <div class="hero-sched-meta">CBEA 103 · Prof. Santos · Wed</div>
+                </div>
+                <span class="hero-sched-badge confirmed">Confirmed</span>
+              </div>
+            </div>
+            <div class="hero-sched-footer">
+              <div class="hero-sched-footer-stat">
+                <div class="n" id="hero-stat-rooms">—</div>
+                <div class="l">Rooms</div>
+              </div>
+              <div class="hero-sched-footer-divider"></div>
+              <div class="hero-sched-footer-stat">
+                <div class="n" id="hero-stat-booked">—</div>
+                <div class="l">Booked</div>
+              </div>
+              <div class="hero-sched-footer-divider"></div>
+              <div class="hero-sched-footer-stat">
+                <div class="n" id="hero-stat-vacant">—</div>
+                <div class="l">Vacant</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEATURE STRIP -->
+      <div class="land-strip">
+        <div class="land-strip-inner">
+          <div class="land-strip-item">
+            <div class="strip-icon orange"><i data-lucide="calendar" style="width:20px;height:20px;stroke:#f47920;stroke-width:1.5"></i></div>
+            <div class="strip-text">
+              <h4>Live Schedule</h4>
+              <p>See the full weekly classroom timetable, updated in real time.</p>
+            </div>
+          </div>
+          <div class="land-strip-item">
+            <div class="strip-icon green"><i data-lucide="door-open" style="width:20px;height:20px;stroke:#1a5c2a;stroke-width:1.5"></i></div>
+            <div class="strip-text">
+              <h4>Room Availability</h4>
+              <p>Find vacant rooms instantly, filtered by type and location.</p>
+            </div>
+          </div>
+          <div class="land-strip-item">
+            <div class="strip-icon yellow"><i data-lucide="clipboard-list" style="width:20px;height:20px;stroke:#c8980a;stroke-width:1.5"></i></div>
+            <div class="strip-text">
+              <h4>Room Requests</h4>
+              <p>Faculty can submit schedule requests reviewed by the scheduling head.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="land-body">
+        <!-- VACANT ROOMS -->
+        <div class="land-body-section">
+          <div class="vacant-toggle">
+            <h2>Vacant Rooms</h2>
+            <button
+              class="toggle-pill"
+              onclick="toggleVacant(this)"
+              id="vacant-pill"
+            >
+              <span class="dot"></span> Show Vacant Rooms
+            </button>
+          </div>
+          <div class="vacant-section" id="vacant-section">
+            <div class="vacant-filters">
+              <input
+                class="vacant-search"
+                type="text"
+                id="vacant-search"
+                placeholder="Search room name..."
+                oninput="renderVacantGrid()"
+              />
+              <button
+                class="vacant-filter-btn active"
+                data-type=""
+                onclick="setVacantType('', this)"
+              >
+                All Types
+              </button>
+              <button
+                class="vacant-filter-btn"
+                data-type="Lecture Room"
+                onclick="setVacantType('Lecture Room', this)"
+              >
+                Lecture
+              </button>
+              <button
+                class="vacant-filter-btn"
+                data-type="Computer Lab"
+                onclick="setVacantType('Computer Lab', this)"
+              >
+                Computer Lab
+              </button>
+              <button
+                class="vacant-filter-btn"
+                data-type="Conference Room"
+                onclick="setVacantType('Conference Room', this)"
+              >
+                Conference
+              </button>
+              <button
+                class="vacant-filter-btn"
+                data-type="Function Hall"
+                onclick="setVacantType('Function Hall', this)"
+              >
+                Function Hall
+              </button>
+            </div>
+            <div class="vacant-filters" style="margin-top: -4px">
+              <button
+                class="vacant-filter-btn active"
+                data-avail="all"
+                onclick="setVacantAvail('all', this)"
+              >
+                All
+              </button>
+              <button
+                class="vacant-filter-btn"
+                data-avail="vacant"
+                onclick="setVacantAvail('vacant', this)"
+              >
+                Fully Vacant
+              </button>
+              <button
+                class="vacant-filter-btn"
+                data-avail="reserved"
+                onclick="setVacantAvail('reserved', this)"
+              >
+                Has Reservations
+              </button>
+              <select
+                id="vacant-floor-filter"
+                onchange="renderVacantGrid()"
+                style="
+                  font-size: 12px;
+                  padding: 5px 10px;
+                  background: var(--surface);
+                  border: 1px solid var(--border);
+                  color: var(--text);
+                  border-radius: 20px;
+                  outline: none;
+                  cursor: pointer;
+                "
+              >
+                <option value="">All Locations</option>
+              </select>
+            </div>
+            <div class="vacant-count" id="vacant-count"></div>
+            <div class="vacant-grid" id="vacant-grid"></div>
+          </div>
+        </div>
+
+        <!-- WEEKLY SCHEDULE (public read-only) -->
+        <div class="land-body-section" id="sched-anchor">
+          <div class="land-sched-wrap">
+            <div class="land-sched-hd">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <h3>
+                  Weekly Schedule
+                  <span class="sched-live-badge">Live</span>
+                </h3>
+                <p style="font-size:11px;color:var(--t2);margin:0;font-weight:500;padding-left:14px;">Full classroom timetable · CBEA · <span id="pub-sched-dayline" style="color:var(--accent);font-weight:700;"></span></p>
+              </div>
+              <select id="pub-room-f" onchange="renderPubSched()">
+                <option value="">All Rooms</option>
+              </select>
+            </div>
+            <div class="sched-wrap" style="padding: 0 14px 14px">
+              <table class="sched-table">
+                <thead>
+                  <tr id="pub-sched-hd"></tr>
+                </thead>
+                <tbody id="pub-sched-bd"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LOGIN ══ -->
+    <div class="screen" id="screen-login">
+      <button class="back-link" onclick="goScreen('landing')">← Back</button>
+      <div class="login-box">
+        <!-- Left panel: campus photo -->
+        <div class="login-img-panel">
+          <img src="img/cbea_cover.jpg" alt="CBEA Campus" onerror="this.src='img/cbea_cover.png'" />
+          <div class="login-img-brand">
+            <img src="img/logo_mmsu1.png" alt="MMSU" />
+            <div class="login-brand-sep"></div>
+            <img src="img/logo_cbea2.png" alt="CBEA" style="border-radius:4px;" />
+          </div>
+          <div class="login-img-welcome">Welcome</div>
+        </div>
+        <!-- Right panel: form -->
+        <div class="login-form-panel">
+          <button class="login-back-link" onclick="goScreen('landing')">Back to home</button>
+          <h1 class="login-heading">Login</h1>
+          <div class="login-field">
+            <label for="l-user">Username</label>
+            <div class="login-field-wrap">
+              <input type="text" id="l-user" placeholder="Enter username" autocomplete="username" />
+            </div>
+          </div>
+          <div class="login-field">
+            <label for="l-pass">Password</label>
+            <div class="login-field-wrap">
+              <input
+                type="password"
+                id="l-pass"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                onkeydown="if (event.key === 'Enter') doLogin();"
+              />
+              <button class="login-eye-btn" type="button" aria-label="Toggle password visibility"
+                onclick="(function(btn){var inp=document.getElementById('l-pass');inp.type=inp.type==='password'?'text':'password';btn.querySelector('svg').style.opacity=inp.type==='text'?'0.5':'1';})(this)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="login-forgot-row">
+            <button class="login-forgot" type="button">Forgot password?</button>
+          </div>
+          <div class="alert danger login-err" id="l-err">
+            <span class="alert-icon">🚫</span>Incorrect credentials.
+          </div>
+          <button class="login-btn" onclick="doLogin()">Login</button>
+          <div class="login-institution">
+            <strong>Mariano Marcos State University</strong>
+            College of Business, Economics &amp; Accountancy
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FACULTY ══ -->
+    <div class="screen" id="screen-faculty">
+      <nav class="top-nav">
+        <div class="nav-brand">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <img
+              src="img/logo_mmsu1.png"
+              style="
+                width: 28px;
+                height: 28px;
+                object-fit: contain;
+                border-radius: 50%;
+                "
+              alt="MMSU"
+            />
+            <div class="nav-logo" style="background: transparent; padding: 0">
+              <img
+                src="img/logo_cbea2.png"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: contain;
+                  border-radius: inherit;
+                "
+                alt="CBEA"
+              />
+            </div>
+          </div>
+          <span class="nav-title">ACROSS</span>
+          <span class="nav-sub">Faculty</span>
+        </div>
+        <div class="nav-r">
+          <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
+          <button
+            class="btn-ghost"
+            id="fac-view-toggle"
+            onclick="toggleFacultyView()"
+          >
+            ⊞ Grid View
+          </button>
+          <button class="btn-ghost" onclick="doLogout()">Logout</button>
+        </div>
+      </nav>
+      <div class="land-body" style="padding-top: 16px">
+        <!-- Weekly view -->
+        <div id="fac-weekly-view">
+          <div class="land-sched-wrap">
+            <div class="land-sched-hd">
+              <h3>Weekly Schedule</h3>
+              <select id="fac-room-f" onchange="renderFacSched()">
+                <option value="">All Rooms</option>
+              </select>
+            </div>
+            <div class="sched-wrap" style="padding: 0 14px 14px">
+              <table class="sched-table">
+                <thead>
+                  <tr id="fac-sched-hd"></tr>
+                </thead>
+                <tbody id="fac-sched-bd"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- Grid view (rooms as columns, MWF/TTH/SAT sections) -->
+        <div id="fac-grid-view" style="display: none">
+          <div class="card" style="margin: 0 14px 24px">
+            <div class="card-hd">
+              <h3>Room Utilization Grid</h3>
+              <select
+                id="fac-grid-room-f"
+                onchange="renderFacGrid()"
+                style="font-size: 12px; padding: 5px 9px"
+              >
+                <option value="">All Rooms</option>
+              </select>
+            </div>
+            <div id="fac-grid-wrap" style="overflow-x: auto"></div>
+          </div>
+        </div>
+        <!-- Request form -->
+        <div
+          class="req-section"
+          id="fac-req-anchor"
+          style="margin: 0 14px 40px"
+        >
+          <h2>Request a Room</h2>
+          <p class="sub">
+            Fill in the details below. The scheduling head will review your
+            request.
+          </p>
+          <div class="form-grid">
+            <div class="fg">
+              <label class="lbl">Your Name</label
+              ><input type="text" id="fac-name" placeholder="Prof. Santos" />
+            </div>
+            <div class="fg">
+              <label class="lbl">Course Code</label
+              ><input type="text" id="fac-subj" placeholder="ACC 194" />
+            </div>
+            <div class="fg">
+              <label class="lbl">Course / Year / Section</label
+              ><input type="text" id="fac-group" placeholder="BS ACC 2A" />
+            </div>
+            <div class="fg">
+              <label class="lbl"
+                >Email
+                <span style="font-weight: 400; color: var(--t3)"
+                  >(optional)</span
+                ></label
+              ><input
+                type="email"
+                id="fac-email"
+                placeholder="prof@mmsu.edu.ph"
+              />
+            </div>
+            <div class="fg">
+              <label class="lbl">Request Type</label>
+              <select id="fac-reqtype" onchange="onFacReqTypeChange()">
+                <option value="new">New Schedule</option>
+                <option value="change">Change Existing Schedule</option>
+              </select>
+            </div>
+            <div class="fg full" id="fac-new-zone">
+              <label class="lbl">Preferred Room</label>
+              <select
+                id="fac-room"
+                onchange="onFacNewRoomChange()"
+                style="margin-top: 5px"
+              ></select>
+              <div
+                class="slot-selected-display"
+                id="fac-new-slot-display"
+                style="display: none"
+              >
+                <span class="slot-display-icon">📍</span>
+                <span id="fac-new-slot-text"></span>
+                <button
+                  onclick="clearFacNewSlot()"
+                  style="
+                    background: none;
+                    border: none;
+                    color: var(--t3);
+                    cursor: pointer;
+                    font-size: 12px;
+                    margin-left: auto;
+                  "
+                >
+                  ✕ Clear
+                </button>
+              </div>
+              <div
+                class="alert info"
+                id="fac-room-info"
+                style="margin-top: 8px"
+              >
+                <span class="alert-icon">ℹ️</span
+                ><span
+                  >Select a room to view its schedule and pick a slot.</span
+                >
+              </div>
+            </div>
+            <div class="fg full" id="fac-change-zone" style="display: none">
+              <div class="from-to-grid">
+                <div class="from-to-card from-card">
+                  <div class="ftc-header">
+                    <span class="ftc-badge from-badge">FROM</span
+                    ><span class="ftc-title">Current Slot</span>
+                  </div>
+                  <label class="lbl" style="margin-bottom: 5px; display: block"
+                    >Current Room</label
+                  >
+                  <select
+                    id="fac-from-room"
+                    onchange="onFacFromRoomChange()"
+                    style="width: 100%; margin-bottom: 10px"
+                  ></select>
+                  <div
+                    class="slot-selected-display"
+                    id="fac-from-display"
+                    style="display: none"
+                  >
+                    <span class="slot-display-icon">📍</span
+                    ><span id="fac-from-text"></span>
+                    <button
+                      onclick="clearFacFromSlot()"
+                      style="
+                        background: none;
+                        border: none;
+                        color: var(--t3);
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-left: auto;
+                      "
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div
+                    id="fac-from-hint"
+                    style="
+                      font-size: 11px;
+                      color: var(--t3);
+                      font-style: italic;
+                    "
+                  >
+                    Select a room to view its schedule
+                  </div>
+                </div>
+                <div class="from-to-card to-card">
+                  <div class="ftc-header">
+                    <span class="ftc-badge to-badge">TO</span
+                    ><span class="ftc-title">New Slot</span>
+                  </div>
+                  <label class="lbl" style="margin-bottom: 5px; display: block"
+                    >Destination Room</label
+                  >
+                  <select
+                    id="fac-to-room"
+                    onchange="onFacToRoomChange()"
+                    style="width: 100%; margin-bottom: 10px"
+                  ></select>
+                  <div
+                    class="slot-selected-display"
+                    id="fac-to-display"
+                    style="display: none"
+                  >
+                    <span class="slot-display-icon">📍</span
+                    ><span id="fac-to-text"></span>
+                    <button
+                      onclick="clearFacToSlot()"
+                      style="
+                        background: none;
+                        border: none;
+                        color: var(--t3);
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-left: auto;
+                      "
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div
+                    id="fac-to-hint"
+                    style="
+                      font-size: 11px;
+                      color: var(--t3);
+                      font-style: italic;
+                    "
+                  >
+                    Select a room to view its schedule
+                  </div>
+                </div>
+              </div>
+              <div
+                class="change-summary"
+                id="fac-change-summary"
+                style="margin-top: 12px"
+              >
+                <div class="cs-row" style="background: var(--rl)">
+                  <span class="cs-lbl from">From</span
+                  ><span class="cs-val" id="fac-cs-from">—</span>
+                </div>
+                <div class="cs-row" style="background: var(--gl)">
+                  <span class="cs-lbl to">To</span
+                  ><span class="cs-val" id="fac-cs-to">—</span>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" id="fac-day" />
+            <input type="hidden" id="fac-time" />
+            <div class="fg full">
+              <label class="lbl">Notes (optional)</label
+              ><textarea
+                id="fac-notes"
+                placeholder="Any additional information..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="alert danger" id="fac-conflict" style="margin-top: 12px">
+            <span class="alert-icon">🚫</span
+            ><span id="fac-conflict-msg"></span>
+          </div>
+          <div class="alert caution" id="fac-warn" style="margin-top: 12px">
+            <span class="alert-icon">⚠️</span><span id="fac-warn-msg"></span>
+          </div>
+          <div style="margin-top: 16px">
+            <button class="btn-save" onclick="submitFacRequest()">
+              Submit Request
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ADMIN ══ -->
+    <div class="screen" id="screen-admin">
+      <nav class="top-nav">
+        <div class="nav-brand">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <img
+              src="img/logo_mmsu1.png"
+              style="
+                width: 28px;
+                height: 28px;
+                object-fit: contain;
+                border-radius: 50%;
+                "
+              alt="MMSU"
+            />
+            <div class="nav-logo" style="background: transparent; padding: 0">
+              <img
+                src="img/logo_cbea2.png"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: contain;
+                  border-radius: inherit;
+                "
+                alt="CBEA"
+              />
+            </div>
+          </div>
+          <span class="nav-title">ACROSS</span
+          ><span class="nav-sub">Admin</span>
+        </div>
+        <div class="nav-r">
+          <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
+          <button class="btn-ghost" onclick="doLogout()">Logout</button>
+        </div>
+        <div class="nav-utility-strip" id="admin-utility-strip">
+          <span class="nav-date-pill" id="admin-nav-date">—</span>
+          <span class="nav-avail-pill" id="admin-nav-avail">— rooms available</span>
+          <button class="nav-cal-btn" title="Go to Schedule" onclick="showAdminPg('schedule', document.querySelector('.a-btn[onclick*=schedule]'))">📅</button>
+        </div>
+      </nav>
+      <div class="admin-body">
+        <aside class="admin-aside">
+          <div class="aside-lbl">Overview</div>
+          <button class="a-btn active" onclick="showAdminPg('dashboard', this)">
+            📊 Dashboard
+          </button>
+          <button class="a-btn" onclick="showAdminPg('schedule', this)">
+            📅 Schedule
+          </button>
+          <div class="aside-lbl">Management</div>
+          <button class="a-btn" onclick="showAdminPg('rooms', this)">
+            🏫 Rooms
+          </button>
+          <button class="a-btn" onclick="showAdminPg('reservations', this)">
+            📋 Reservations
+          </button>
+          <button class="a-btn" onclick="showAdminPg('requests', this)">
+            📨 Requests <span class="badge" id="req-badge"></span>
+          </button>
+          <div class="aside-lbl">Tools</div>
+          <button
+            class="a-btn"
+            onclick="
+              openModal('import-modal');
+              resetImport();
+            "
+          >
+            📥 Import Schedule
+          </button>
+          <button
+            class="a-btn"
+            onclick="
+              openModal('export-modal');
+              initExport();
+            "
+          >
+            📤 Export Data
+          </button>
+          <button
+            class="a-btn"
+            onclick="
+              openModal('password-modal');
+              showAlert('pw-err', false);
+              showAlert('pw-ok', false);
+            "
+          >
+            🔑 Change Password
+          </button>
+          <button
+            class="a-btn"
+            style="color: var(--red)"
+            onclick="openClearModal('reservations')"
+          >
+            🗑 Clear Reservations
+          </button>
+          <button
+            class="a-btn"
+            style="color: var(--red)"
+            onclick="openClearModal('rooms')"
+          >
+            🗑 Clear All Rooms
+          </button>
+        </aside>
+        <div class="admin-main">
+          <!-- DASHBOARD -->
+          <div class="pg active" id="apg-dashboard">
+            <div class="pg-hd">
+              <h1>Dashboard</h1>
+              <p>Overview of the CBEA scheduling system.</p>
+            </div>
+            <div class="stats">
+              <div class="stat hi">
+                <div class="stat-l">Total Rooms</div>
+                <div class="stat-v" id="ds-rooms">0</div>
+                <div class="stat-s">in database</div>
+              </div>
+              <div class="stat">
+                <div class="stat-l">Approved</div>
+                <div class="stat-v" id="ds-approved">0</div>
+                <div class="stat-s">reservations</div>
+              </div>
+              <div class="stat">
+                <div class="stat-l">Pending</div>
+                <div class="stat-v" id="ds-pending">0</div>
+                <div class="stat-s">awaiting review</div>
+              </div>
+              <div class="stat clickable" onclick="showVacantModal()">
+                <div class="stat-l">Vacant</div>
+                <div class="stat-v" id="ds-vacant">0</div>
+                <div class="stat-s">rooms free — click to view</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><h3>Pending Requests</h3></div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Purpose</th>
+                      <th>Room</th>
+                      <th>Day & Time</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-pending"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card" style="margin-top: 20px">
+              <div class="card-hd">
+                <h3>⚠️ Scheduling Conflicts</h3>
+                <span style="font-size: 12px; color: var(--t3)"
+                  >Click Resolve to edit directly</span
+                >
+              </div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Room</th>
+                      <th>Course</th>
+                      <th>Group / Faculty</th>
+                      <th>Day &amp; Time</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-conflicts"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- SCHEDULE -->
+          <div class="pg" id="apg-schedule">
+            <div class="pg-hd">
+              <h1>Schedule</h1>
+              <div
+                style="
+                  display: flex;
+                  gap: 8px;
+                  align-items: center;
+                  flex-wrap: wrap;
+                "
+              >
+                <button
+                  class="vacant-filter-btn active"
+                  id="sched-view-weekly"
+                  onclick="setAdminSchedView('weekly', this)"
+                >
+                  Weekly View
+                </button>
+                <button
+                  class="vacant-filter-btn"
+                  id="sched-view-grid"
+                  onclick="setAdminSchedView('grid', this)"
+                >
+                  Grid View
+                </button>
+              </div>
+            </div>
+            <!-- Weekly view -->
+            <div id="admin-weekly-view" class="card">
+              <div class="card-hd">
+                <h3>Weekly Schedule</h3>
+                <select
+                  id="a-room-f"
+                  onchange="renderAdminSched()"
+                  style="font-size: 12px; padding: 5px 9px"
+                >
+                  <option value="">All Rooms</option>
+                </select>
+              </div>
+              <div class="sched-wrap">
+                <table class="sched-table">
+                  <thead>
+                    <tr id="a-sched-hd"></tr>
+                  </thead>
+                  <tbody id="a-sched-bd"></tbody>
+                </table>
+              </div>
+            </div>
+            <!-- Grid view -->
+            <div id="admin-grid-view" style="display: none" class="card">
+              <div class="card-hd">
+                <h3>Room Utilization Grid</h3>
+                <select
+                  id="a-grid-room-f"
+                  onchange="renderAdminGrid()"
+                  style="font-size: 12px; padding: 5px 9px"
+                >
+                  <option value="">All Rooms</option>
+                </select>
+              </div>
+              <div id="admin-grid-wrap" style="overflow-x: auto"></div>
+            </div>
+          </div>
+          <!-- ROOMS -->
+          <div class="pg" id="apg-rooms">
+            <div class="pg-hd">
+              <h1>Rooms</h1>
+              <p>Manage CBEA classrooms.</p>
+            </div>
+            <div class="card">
+              <div class="card-hd">
+                <h3>All Rooms</h3>
+                <button class="btn-save" onclick="openRoomModal()">
+                  + Add Room
+                </button>
+              </div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Room Name</th>
+                      <th>Type</th>
+                      <th>Capacity</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rooms-tbl"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- RESERVATIONS -->
+          <div class="pg" id="apg-reservations">
+            <div class="pg-hd">
+              <h1>Reservations</h1>
+              <p>Manage approved schedule entries.</p>
+            </div>
+            <div class="card">
+              <div class="card-hd">
+                <h3>All Reservations</h3>
+                <button class="btn-save" onclick="openBookingModal()">
+                  + Add Reservation
+                </button>
+              </div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Faculty</th>
+                      <th>Course</th>
+                      <th>Group</th>
+                      <th>Room</th>
+                      <th>Day</th>
+                      <th>Time</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reservations-tbl">
+                    <tr id="reservations-tbl-empty" class="js-empty-row">
+                      <td colspan="7" style="padding:0;border:none;">
+                        <div class="tbl-empty-state">
+                          <div class="tbl-empty-icon">📅</div>
+                          <div class="tbl-empty-title">No reservations yet</div>
+                          <div class="tbl-empty-sub">Approved schedule entries will appear here. Add a reservation using the button above.</div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- REQUESTS -->
+          <div class="pg" id="apg-requests">
+            <div class="pg-hd">
+              <h1>Requests</h1>
+              <p>Pending requests appear first.</p>
+            </div>
+            <div class="card">
+              <div class="req-search-bar">
+                <input
+                  class="req-search-input"
+                  type="text"
+                  id="req-search"
+                  placeholder="Search by name, subject, group, room..."
+                  oninput="renderReqTbl()"
+                />
+                <button class="req-search-clear" onclick="clearReqSearch()">
+                  ✕ Clear
+                </button>
+              </div>
+              <div class="req-result-count" id="req-result-count"></div>
+              <div class="card-hd" style="margin-bottom: 8px">
+                <h3>All Requests</h3>
+              </div>
+              <div class="tbl-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Subject</th>
+                      <th>Group</th>
+                      <th>Room</th>
+                      <th>Day & Time</th>
+                      <th>Notes</th>
+                      <th>Status</th>
+                      <th>Action Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="req-tbl">
+                    <tr id="req-tbl-empty" class="js-empty-row">
+                      <td colspan="9" style="padding:0;border:none;">
+                        <div class="tbl-empty-state">
+                          <div class="tbl-empty-icon">📋</div>
+                          <div class="tbl-empty-title">No requests found</div>
+                          <div class="tbl-empty-sub">Faculty room requests appear here. Pending requests are always shown first.</div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button
+      class="back-to-top"
+      id="back-to-top"
+      onclick="backToTop()"
+      title="Back to top"
+    >
+      ↑
+    </button>
+    <script>
+      /* ── Schedule section: live day label ── */
+      function updateSchedDayLine() {
+        var el = document.getElementById("pub-sched-dayline");
+        if (!el) return;
+        var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+        var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        var now = new Date();
+        el.textContent = days[now.getDay()] + " · " + months[now.getMonth()] + " " + now.getDate();
+      }
+
+      /* ── Today-column visual highlight ── */
+      function highlightTodayColumn() {
+        /* Map JS day index to the day abbreviation used in th text */
+        var dayMap = {0:"SUN",1:"MON",2:"TUE",3:"WED",4:"THU",5:"FRI",6:"SAT"};
+        var todayAbbr = dayMap[new Date().getDay()];
+        /* Find all sched tables and mark matching columns */
+        document.querySelectorAll(".sched-table").forEach(function(tbl) {
+          var ths = tbl.querySelectorAll("thead th");
+          var todayIdx = -1;
+          ths.forEach(function(th, i) {
+            if (th.textContent.trim().toUpperCase() === todayAbbr) {
+              th.classList.add("today-col");
+              todayIdx = i;
+            }
+          });
+          if (todayIdx > -1) {
+            tbl.querySelectorAll("tbody tr").forEach(function(row) {
+              var td = row.querySelectorAll("td")[todayIdx];
+              if (td) td.classList.add("today-col");
+            });
+          }
+        });
+      }
+
+      /* ── Landing page: scroll-reveal + feature strip animations ── */
+      (function () {
+        function initScrollReveal() {
+          var items = document.querySelectorAll(
+            ".land-strip-item, .land-body-section"
+          );
+          if (!items.length) return;
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add("visible");
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0.12 }
+          );
+          items.forEach(function (el) { io.observe(el); });
+        }
+
+        /* Populate hero stat cards once main.js has loaded data */
+        function wireHeroStats() {
+          var attempt = 0;
+          var iv = setInterval(function () {
+            attempt++;
+            var roomsEl = document.getElementById("ds-rooms");
+            var approvedEl = document.getElementById("ds-approved");
+            var vacantEl = document.getElementById("ds-vacant");
+            if (roomsEl && roomsEl.textContent !== "0") {
+              var r = document.getElementById("hero-stat-rooms");
+              var b = document.getElementById("hero-stat-booked");
+              var v = document.getElementById("hero-stat-vacant");
+              if (r) r.textContent = roomsEl.textContent;
+              if (b) b.textContent = approvedEl ? approvedEl.textContent : "—";
+              if (v) v.textContent = vacantEl ? vacantEl.textContent : "—";
+              clearInterval(iv);
+            }
+            if (attempt > 40) clearInterval(iv);
+          }, 500);
+        }
+
+        /* ── Admin utility strip: live date + availability pill ── */
+        function updateAdminUtilityStrip() {
+          var dateEl = document.getElementById("admin-nav-date");
+          var availEl = document.getElementById("admin-nav-avail");
+          if (!dateEl) return;
+
+          /* Date / day display */
+          var now = new Date();
+          var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+          var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          dateEl.textContent = days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate();
+
+          /* Availability summary — pull from dashboard stats */
+          var attempt = 0;
+          var iv = setInterval(function () {
+            attempt++;
+            var vacantEl = document.getElementById("ds-vacant");
+            var roomsEl  = document.getElementById("ds-rooms");
+            if (vacantEl && roomsEl && roomsEl.textContent !== "0") {
+              var v = parseInt(vacantEl.textContent) || 0;
+              var t = parseInt(roomsEl.textContent) || 0;
+              if (availEl) availEl.textContent = v + " / " + t + " rooms free";
+              clearInterval(iv);
+            }
+            if (attempt > 40) clearInterval(iv);
+          }, 600);
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", function () {
+            initScrollReveal();
+            wireHeroStats();
+            updateAdminUtilityStrip();
+            if (typeof lucide !== "undefined") lucide.createIcons();
+            updateSchedDayLine();
+            setTimeout(highlightTodayColumn, 800);
+          });
+        } else {
+          initScrollReveal();
+          wireHeroStats();
+          updateAdminUtilityStrip();
+          if (typeof lucide !== "undefined") lucide.createIcons();
+          updateSchedDayLine();
+          setTimeout(highlightTodayColumn, 800);
+        }
+      })();
+    </script>
+    <script src="js/main.js" defer></script>
+  </body>
+</html>
