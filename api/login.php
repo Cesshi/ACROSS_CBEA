@@ -23,7 +23,7 @@ if ($method === 'POST') {
     }
 
     $conn = getConnection();
-    $stmt = $conn->prepare('SELECT id, username, password, role FROM users WHERE username = ?');
+    $stmt = $conn->prepare('SELECT id, username, password_hash, role FROM users WHERE username = ?');
     $stmt->bind_param('s', $username);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
@@ -33,7 +33,7 @@ if ($method === 'POST') {
     // Accept bcrypt OR known dev defaults
     $devPasswords = ['admin' => 'admin123', 'faculty' => 'cbea2026'];
     $valid = $user && (
-        password_verify($password, $user['password']) ||
+        password_verify($password, $user['password_hash']) ||
         (isset($devPasswords[$username]) && $password === $devPasswords[$username])
     );
 

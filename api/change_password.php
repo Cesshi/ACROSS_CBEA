@@ -34,7 +34,7 @@ if (!in_array($target, ['admin', 'faculty'])) {
 
 $hash = password_hash($newPass, PASSWORD_BCRYPT);
 $conn = getConnection();
-$stmt = $conn->prepare('UPDATE users SET password = ? WHERE username = ?');
+$stmt = $conn->prepare('UPDATE users SET password_hash = ? WHERE username = ?');
 $stmt->bind_param('ss', $hash, $target);
 $stmt->execute();
 $affected = $stmt->affected_rows;
