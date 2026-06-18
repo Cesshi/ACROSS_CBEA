@@ -1,6 +1,3 @@
-/* ACROSS CBEA */
-/* Automated ClassRoom Occupancy Scheduling System, CBEA MMSU */
-
 // ── API ───────────────────────────────────────────────────
 const API = {
   base: "/across_cbea/api",
@@ -231,6 +228,20 @@ function smoothScrollTo(id) {
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function findRoomClick() {
+  const s = document.getElementById("vacant-section");
+  const wrap = document.getElementById("vacant-wrap");
+  const pill = document.getElementById("vacant-pill");
+  const toggle = document.querySelector(".vacant-toggle");
+  if (s && !s.classList.contains("open")) {
+    s.classList.add("open");
+    if (toggle) toggle.classList.add("section-open");
+    if (pill) pill.innerHTML = `<span class="dot"></span> Hide Vacant Rooms`;
+    renderVacantGrid();
+  }
+  if (wrap) wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 async function doLogin() {
   const u = document.getElementById("l-user").value.trim();
   const p = document.getElementById("l-pass").value;
@@ -278,6 +289,7 @@ async function loadData() {
   populatePubSelects();
   renderPubSched();
   renderVacantGrid();
+  renderHeroLiveSchedule();
 }
 
 async function loadAdminData() {
@@ -298,6 +310,7 @@ async function loadAdminData() {
     updateBadge();
     populatePubSelects();
     populateFacSelects();
+    renderHeroLiveSchedule();
   } catch (e) {
     console.error("loadAdminData", e);
   }
@@ -530,6 +543,8 @@ function buildSchedTable(headEl, bodyEl, roomFilter) {
 
     bodyEl.appendChild(tr);
   });
+
+  if (typeof highlightTodayColumn === "function") highlightTodayColumn();
 }
 
 // ── GRID VIEW — tabbed by day pattern ────────────────────
@@ -607,7 +622,19 @@ function buildGridView(wrapEl, roomFilter) {
   tabs.forEach((tab) => {
     const btn = document.createElement("button");
     btn.textContent = tab;
-    btn.style.cssText = `padding:5px 14px;font-size:11px;font-weight:700;border-radius:6px 6px 0 0;border:1px solid var(--border);border-bottom:none;cursor:pointer;transition:all .15s;${tab === activeTab ? "background:var(--green);color:#fff;border-color:var(--green)" : "background:var(--surface);color:var(--t2)"}`;
+    const tabGroup = MWF_PATTERNS.has(tab)
+      ? "forest"
+      : TTH_PATTERNS.has(tab)
+        ? "teal"
+        : "gold";
+    const activeColor =
+      tabGroup === "forest"
+        ? "var(--forest)"
+        : tabGroup === "teal"
+          ? "var(--teal)"
+          : "var(--gold-d)";
+    const activeText = tabGroup === "gold" ? "#3a2c00" : "#fff";
+    btn.style.cssText = `padding:5px 14px;font-size:11px;font-weight:700;border-radius:6px 6px 0 0;border:1px solid var(--border);border-bottom:none;cursor:pointer;transition:all .15s;${tab === activeTab ? `background:${activeColor};color:${activeText};border-color:${activeColor}` : "background:var(--surface);color:var(--t2)"}`;
     btn.addEventListener("click", () => {
       gridTabState[wrapId] = tab;
       buildGridView(wrapEl, roomFilter);
@@ -806,8 +833,129 @@ function renderVacantGrid() {
 function toggleVacant(btn) {
   const s = document.getElementById("vacant-section");
   const open = s.classList.toggle("open");
+  const toggle = document.querySelector(".vacant-toggle");
+  if (toggle) toggle.classList.toggle("section-open", open);
   btn.innerHTML = `<span class="dot"></span> ${open ? "Hide" : "Show"} Vacant Rooms`;
   if (open) renderVacantGrid();
+}
+
+// ── HERO LIVE SCHEDULE (today's vacant rooms by hour) ──────
+const HERO_DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const HERO_HOURS_START = 7 * 60; // 7:00 AM
+const HERO_HOURS_END = 20 * 60; // 8:00 PM
+let heroScrollTimer = null;
+
+function fmtHourLabel(min) {
+  let h = Math.floor(min / 60);
+  const m = min % 60;
+  const ap = h >= 12 ? "PM" : "AM";
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return `${h12}:${m.toString().padStart(2, "0")} ${ap}`;
+}
+
+function renderHeroLiveSchedule() {
+  const body = document.getElementById("hero-sched-body");
+  if (!body) return;
+
+  const todayName = HERO_DAY_NAMES[new Date().getDay()];
+  const activeRooms = rooms; // already excludes RESTRICTED_ROOMS via loadData/loadAdminData
+  const approvedToday = bookings.filter((b) => {
+    if (b.status !== "approved") return false;
+    const days = DAY_MAP[b.day] || [b.day];
+    return days.includes(todayName);
+  });
+
+  // Update footer stats
+  const roomsWithBookingToday = new Set(approvedToday.map((b) => b.room));
+  const totalRooms = activeRooms.length;
+  const bookedCount = roomsWithBookingToday.size;
+  const vacantCount = totalRooms - bookedCount;
+  const elRooms = document.getElementById("hero-stat-rooms");
+  const elBooked = document.getElementById("hero-stat-booked");
+  const elVacant = document.getElementById("hero-stat-vacant");
+  if (elRooms) elRooms.textContent = totalRooms;
+  if (elBooked) elBooked.textContent = bookedCount;
+  if (elVacant) elVacant.textContent = vacantCount;
+
+  if (todayName === "Sun") {
+    body.innerHTML = `<div class="hero-sched-row available-row"><div class="hero-sched-info"><div class="hero-sched-subj">No classes today</div><div class="hero-sched-meta">All rooms vacant all day · Sunday</div></div><span class="hero-sched-badge available">Vacant</span></div>`;
+    return;
+  }
+
+  // For each room, build list of booked ranges today, then find open gaps within business hours
+  const rows = [];
+  activeRooms.forEach((r) => {
+    const roomBookings = approvedToday
+      .filter((b) => b.room === r.name)
+      .map((b) => parseRange(b.time))
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start);
+
+    let cursor = HERO_HOURS_START;
+    const gaps = [];
+    roomBookings.forEach((rb) => {
+      const start = Math.max(rb.start, HERO_HOURS_START);
+      const end = Math.min(rb.end, HERO_HOURS_END);
+      if (start > cursor) gaps.push({ start: cursor, end: start });
+      cursor = Math.max(cursor, end);
+    });
+    if (cursor < HERO_HOURS_END)
+      gaps.push({ start: cursor, end: HERO_HOURS_END });
+
+    gaps.forEach((g) => {
+      if (g.end - g.start >= 30) {
+        rows.push({
+          room: r.name,
+          type: r.type,
+          start: g.start,
+          end: g.end,
+        });
+      }
+    });
+  });
+
+  rows.sort((a, b) => a.start - b.start || a.room.localeCompare(b.room));
+
+  if (!rows.length) {
+    body.innerHTML = `<div class="hero-sched-row confirmed-row"><div class="hero-sched-info"><div class="hero-sched-subj">No vacant slots</div><div class="hero-sched-meta">All rooms fully booked today</div></div><span class="hero-sched-badge confirmed">Full</span></div>`;
+    return;
+  }
+
+  body.innerHTML = rows
+    .map(
+      (r, i) => `
+      ${i > 0 ? '<div class="hero-sched-divider"></div>' : ""}
+      <div class="hero-sched-row available-row">
+        <span class="hero-sched-time">${fmtHourLabel(r.start)}–${fmtHourLabel(r.end)}</span>
+        <div class="hero-sched-info">
+          <div class="hero-sched-subj">${r.room}</div>
+          <div class="hero-sched-meta">${r.type} · Vacant</div>
+        </div>
+        <span class="hero-sched-badge available">Vacant</span>
+      </div>`,
+    )
+    .join("");
+
+  startHeroAutoScroll();
+}
+
+function startHeroAutoScroll() {
+  const body = document.getElementById("hero-sched-body");
+  if (!body) return;
+  if (heroScrollTimer) clearInterval(heroScrollTimer);
+  let direction = 1;
+  heroScrollTimer = setInterval(() => {
+    if (!body.isConnected) {
+      clearInterval(heroScrollTimer);
+      return;
+    }
+    const maxScroll = body.scrollHeight - body.clientHeight;
+    if (maxScroll <= 0) return;
+    body.scrollTop += direction * 0.6;
+    if (body.scrollTop >= maxScroll) direction = -1;
+    if (body.scrollTop <= 0) direction = 1;
+  }, 40);
 }
 
 // ── PUBLIC SELECTS ────────────────────────────────────────
@@ -2209,3 +2357,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadData();
   showAlert("import-info", true);
 });
+
+// Periodically refresh room/reservation data so the hero card
+// and vacant rooms stay live without requiring a manual reload.
+const HERO_REFRESH_MS = 60000; // 1 minute
+setInterval(async () => {
+  const landing = document.getElementById("screen-landing");
+  if (!landing || !landing.classList.contains("active")) return;
+  try {
+    const [r, b] = await Promise.all([
+      API.get("rooms"),
+      API.get("reservations", "status=all"),
+    ]);
+    rooms = r.filter((rm) => !RESTRICTED_ROOMS.has(rm.name));
+    bookings = b;
+    renderHeroLiveSchedule();
+    if (document.getElementById("vacant-section")?.classList.contains("open")) {
+      renderVacantGrid();
+    }
+  } catch (e) {
+    console.error("Background refresh failed:", e);
+  }
+}, HERO_REFRESH_MS);

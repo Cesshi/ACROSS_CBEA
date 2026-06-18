@@ -635,10 +635,7 @@
             >
               View Schedule
             </button>
-            <button
-              class="btn-outline-green"
-              onclick="smoothScrollTo('sched-anchor')"
-            >
+            <button class="btn-outline-green" onclick="findRoomClick()">
               Find a Room
             </button>
           </div>
@@ -648,48 +645,17 @@
         <div class="land-hero-right">
           <div class="hero-sched-card">
             <div class="hero-sched-card-hd">
-              <h4>Weekly Schedule</h4>
+              <h4>Today's Vacant Rooms</h4>
               <span class="hero-sched-live">Live</span>
             </div>
-            <div class="hero-sched-body">
+            <div class="hero-sched-body" id="hero-sched-body">
               <div class="hero-sched-row confirmed-row">
-                <span class="hero-sched-time">7:00 – 8:00</span>
                 <div class="hero-sched-info">
-                  <div class="hero-sched-subj">Business Finance</div>
+                  <div class="hero-sched-subj">Loading…</div>
                   <div class="hero-sched-meta">
-                    CBEA 101 · Prof. Reyes · Mon
+                    Fetching today's room availability
                   </div>
                 </div>
-                <span class="hero-sched-badge confirmed">Confirmed</span>
-              </div>
-              <div class="hero-sched-divider"></div>
-              <div class="hero-sched-row confirmed-row">
-                <span class="hero-sched-time">9:00 – 10:00</span>
-                <div class="hero-sched-info">
-                  <div class="hero-sched-subj">Accounting 101</div>
-                  <div class="hero-sched-meta">CBEA 101 · Prof. Cruz · Mon</div>
-                </div>
-                <span class="hero-sched-badge confirmed">Confirmed</span>
-              </div>
-              <div class="hero-sched-divider"></div>
-              <div class="hero-sched-row available-row">
-                <span class="hero-sched-time">10:00 – 11:00</span>
-                <div class="hero-sched-info">
-                  <div class="hero-sched-subj">CBEA 103</div>
-                  <div class="hero-sched-meta">Thu · Open slot</div>
-                </div>
-                <span class="hero-sched-badge available">Available</span>
-              </div>
-              <div class="hero-sched-divider"></div>
-              <div class="hero-sched-row confirmed-row">
-                <span class="hero-sched-time">1:00 – 2:00</span>
-                <div class="hero-sched-info">
-                  <div class="hero-sched-subj">Marketing Mgmt</div>
-                  <div class="hero-sched-meta">
-                    CBEA 103 · Prof. Santos · Wed
-                  </div>
-                </div>
-                <span class="hero-sched-badge confirmed">Confirmed</span>
               </div>
             </div>
             <div class="hero-sched-footer">
@@ -776,7 +742,7 @@
 
       <div class="land-body">
         <!-- VACANT ROOMS -->
-        <div class="land-body-section">
+        <div class="land-body-section" id="vacant-wrap">
           <div class="vacant-toggle">
             <h2>Vacant Rooms</h2>
             <button
@@ -788,85 +754,81 @@
             </button>
           </div>
           <div class="vacant-section" id="vacant-section">
-            <div class="vacant-filters">
-              <input
-                class="vacant-search"
-                type="text"
-                id="vacant-search"
-                placeholder="Search room name..."
-                oninput="renderVacantGrid()"
-              />
-              <button
-                class="vacant-filter-btn active"
-                data-type=""
-                onclick="setVacantType('', this)"
-              >
-                All Types
-              </button>
-              <button
-                class="vacant-filter-btn"
-                data-type="Lecture Room"
-                onclick="setVacantType('Lecture Room', this)"
-              >
-                Lecture
-              </button>
-              <button
-                class="vacant-filter-btn"
-                data-type="Computer Lab"
-                onclick="setVacantType('Computer Lab', this)"
-              >
-                Computer Lab
-              </button>
-              <button
-                class="vacant-filter-btn"
-                data-type="Conference Room"
-                onclick="setVacantType('Conference Room', this)"
-              >
-                Conference
-              </button>
-              <button
-                class="vacant-filter-btn"
-                data-type="Function Hall"
-                onclick="setVacantType('Function Hall', this)"
-              >
-                Function Hall
-              </button>
-            </div>
-            <div class="vacant-filters" style="margin-top: -4px">
-              <button
-                class="vacant-filter-btn active"
-                data-avail="all"
-                onclick="setVacantAvail('all', this)"
-              >
-                All
-              </button>
-              <button
-                class="vacant-filter-btn"
-                data-avail="vacant"
-                onclick="setVacantAvail('vacant', this)"
-              >
-                Fully Vacant
-              </button>
-              <button
-                class="vacant-filter-btn"
-                data-avail="reserved"
-                onclick="setVacantAvail('reserved', this)"
-              >
-                Has Reservations
-              </button>
+            <input
+              class="vacant-search"
+              type="text"
+              id="vacant-search"
+              placeholder="Search room name..."
+              oninput="renderVacantGrid()"
+            />
+            <div class="vacant-filter-row">
+              <div class="vacant-filter-group">
+                <span class="vacant-filter-label">Type</span>
+                <button
+                  class="vacant-filter-btn active"
+                  data-type=""
+                  onclick="setVacantType('', this)"
+                >
+                  All
+                </button>
+                <button
+                  class="vacant-filter-btn"
+                  data-type="Lecture Room"
+                  onclick="setVacantType('Lecture Room', this)"
+                >
+                  Lecture
+                </button>
+                <button
+                  class="vacant-filter-btn"
+                  data-type="Computer Lab"
+                  onclick="setVacantType('Computer Lab', this)"
+                >
+                  Computer Lab
+                </button>
+                <button
+                  class="vacant-filter-btn"
+                  data-type="Conference Room"
+                  onclick="setVacantType('Conference Room', this)"
+                >
+                  Conference
+                </button>
+                <button
+                  class="vacant-filter-btn"
+                  data-type="Function Hall"
+                  onclick="setVacantType('Function Hall', this)"
+                >
+                  Function Hall
+                </button>
+              </div>
+              <div class="vacant-filter-divider"></div>
+              <div class="vacant-filter-group">
+                <span class="vacant-filter-label">Status</span>
+                <button
+                  class="vacant-filter-btn active"
+                  data-avail="all"
+                  onclick="setVacantAvail('all', this)"
+                >
+                  All
+                </button>
+                <button
+                  class="vacant-filter-btn"
+                  data-avail="vacant"
+                  onclick="setVacantAvail('vacant', this)"
+                >
+                  Fully Vacant
+                </button>
+                <button
+                  class="vacant-filter-btn"
+                  data-avail="reserved"
+                  onclick="setVacantAvail('reserved', this)"
+                >
+                  Has Reservations
+                </button>
+              </div>
               <select
                 id="vacant-floor-filter"
+                class="vacant-floor-select"
                 onchange="renderVacantGrid()"
-                style="
-                  font-size: 12px;
-                  padding: 5px 10px;
-                  background: var(--surface);
-                  border: 1px solid var(--border);
-                  color: var(--text);
-                  border-radius: 20px;
-                  outline: none;
-                  cursor: pointer;
-                "
               >
                 <option value="">All Locations</option>
               </select>
@@ -1737,7 +1699,7 @@
           now.getDate();
       }
 
-      /* ── Today-column visual highlight ── */
+      /* ── Day-group column coloring + today indicator ── */
       function highlightTodayColumn() {
         /* Map JS day index to the day abbreviation used in th text */
         var dayMap = {
@@ -1749,13 +1711,29 @@
           5: "FRI",
           6: "SAT",
         };
+        /* Which group each weekday abbreviation belongs to */
+        var groupMap = {
+          MON: "mwf",
+          TUE: "tth",
+          WED: "mwf",
+          THU: "tth",
+          FRI: "mwf",
+          SAT: "sat",
+          SUN: "sat",
+        };
         var todayAbbr = dayMap[new Date().getDay()];
         /* Find all sched tables and mark matching columns */
         document.querySelectorAll(".sched-table").forEach(function (tbl) {
           var ths = tbl.querySelectorAll("thead th");
           var todayIdx = -1;
           ths.forEach(function (th, i) {
-            if (th.textContent.trim().toUpperCase() === todayAbbr) {
+            var txt = th.textContent.trim().toUpperCase();
+            var group = groupMap[txt];
+            if (group) {
+              th.classList.remove("group-mwf", "group-tth", "group-sat");
+              th.classList.add("group-" + group);
+            }
+            if (txt === todayAbbr) {
               th.classList.add("today-col");
               todayIdx = i;
             }
@@ -1766,6 +1744,18 @@
               if (td) td.classList.add("today-col");
             });
           }
+          /* Apply group classes to body cells too, for column tinting */
+          ths.forEach(function (th, i) {
+            var group = groupMap[th.textContent.trim().toUpperCase()];
+            if (!group) return;
+            tbl.querySelectorAll("tbody tr").forEach(function (row) {
+              var td = row.querySelectorAll("td")[i];
+              if (td) {
+                td.classList.remove("group-mwf", "group-tth", "group-sat");
+                td.classList.add("group-" + group);
+              }
+            });
+          });
         });
       }
 
