@@ -24,6 +24,11 @@ if (strpos($contentType, 'application/json') !== false) {
     $conn = getConnection();
     $inserted = 0; $skipped = 0; $errors = [];
 
+    // Preload valid room names once, to avoid a foreign key crash per row
+    $validRooms = [];
+    $rr = $conn->query('SELECT name FROM rooms');
+    while ($rrow = $rr->fetch_assoc()) { $validRooms[$rrow['name']] = true; }
+
     foreach ($rows as $i => $row) {
         $prof  = trim($row['prof']  ?? '');
         $subj  = trim($row['subj']  ?? '');
@@ -38,6 +43,10 @@ if (strpos($contentType, 'application/json') !== false) {
             $skipped++; $errors[] = "Row $i skipped: missing fields."; continue;
         }
 
+        if (!isset($validRooms[$room])) {
+            $skipped++; $errors[] = "Row $i skipped: room \"$room\" is not registered in the system. Add it via Rooms first."; continue;
+        }
+
         $ck = $conn->prepare('SELECT id FROM reservations WHERE room=? AND day=? AND time_slot=? AND status="approved"');
         $ck->bind_param('sss', $room, $day, $time);
         $ck->execute(); $ck->store_result();
@@ -46,10 +55,15 @@ if (strpos($contentType, 'application/json') !== false) {
         }
         $ck->close();
 
-        $stmt = $conn->prepare('INSERT INTO reservations (prof, subj, `group`, email, room, day, time_slot, notes, status, action_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "approved", NOW())');
-        $stmt->bind_param('ssssssss', $prof, $subj, $group, $email, $room, $day, $time, $notes);
-        $stmt->execute(); $stmt->close();
-        $inserted++;
+        try {
+            $stmt = $conn->prepare('INSERT INTO reservations (prof, subj, `group`, email, room, day, time_slot, notes, status, action_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "approved", NOW())');
+            $stmt->bind_param('ssssssss', $prof, $subj, $group, $email, $room, $day, $time, $notes);
+            $stmt->execute();
+            $stmt->close();
+            $inserted++;
+        } catch (mysqli_sql_exception $e) {
+            $skipped++; $errors[] = "Row $i skipped: " . $e->getMessage();
+        }
     }
     $conn->close();
     echo json_encode(['success' => true, 'inserted' => $inserted, 'skipped' => $skipped, 'errors' => $errors]);
@@ -277,14 +291,23 @@ for ($i = $headerIdx + 1; $i < count($parsed); $i++) {
     $dayResult  = normalizeDay($day, $dayMap);
     $group      = trim("$course $year" . ($section ? "-$section" : ''));
 
+    $missingFields = [];
+    if (!$faculty) $missingFields[] = 'Faculty name';
+    if (!$ccode)   $missingFields[] = 'Course code';
+    if (!$time)    $missingFields[] = 'Time';
+    if (!$day)     $missingFields[] = 'Day';
+
     $flagged = false; $flagReason = '';
-    if (!$faculty)                { $flagged = true; $flagReason = 'Missing faculty name'; }
-    elseif (!$ccode)              { $flagged = true; $flagReason = 'Missing course code'; }
-    elseif (!$time)               { $flagged = true; $flagReason = 'Missing time'; }
-    elseif (!$day)                { $flagged = true; $flagReason = 'Missing day'; }
-    elseif ($skipRoom)            { $flagged = true; $flagReason = 'Restricted room excluded'; }
-    elseif (!$roomResult['found'])  { $flagged = true; $flagReason = "Room not in system: $roomRaw"; }
-    elseif (!$dayResult['found'])   { $flagged = true; $flagReason = "Unknown day pattern: $day"; }
+    if (!empty($missingFields)) {
+        $flagged = true;
+        $flagReason = 'Missing: ' . implode(', ', $missingFields);
+    } elseif ($skipRoom) {
+        $flagged = true; $flagReason = 'Restricted room excluded';
+    } elseif (!$roomResult['found']) {
+        $flagged = true; $flagReason = "Room not in system: $roomRaw";
+    } elseif (!$dayResult['found']) {
+        $flagged = true; $flagReason = "Unknown day pattern: $day";
+    }
 
     $rows[] = [
         'prof'        => $faculty,

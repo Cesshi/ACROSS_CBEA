@@ -1,4 +1,3 @@
-// ── API ───────────────────────────────────────────────────
 const API = {
   base: "/across_cbea/api",
   async get(endpoint, params = "") {
@@ -76,6 +75,20 @@ function genSlots(startMin, endMin, step) {
   return slots;
 }
 const ALL_SLOTS = genSlots(SLOT_START, SLOT_END, SLOT_SIZE);
+
+// Flat list of slot labels (e.g. "7:00 AM", "7:30") used by the room
+// picker modal, which renders one row per label rather than per {min,label}.
+const TIMES = ALL_SLOTS.map((s) => s.label);
+
+// Does a single time-slot label (e.g. "8:00 AM") fall within a
+// booking's time range string (e.g. "08:00-09:00")?
+function timesOverlap(rangeStr, slotLabel) {
+  const range = parseRange(rangeStr);
+  if (!range) return false;
+  const slotMin = timeToMin(slotLabel);
+  if (slotMin < 0) return false;
+  return slotMin >= range.start && slotMin < range.end;
+}
 
 // Section slot ranges (in minutes from midnight)
 const SECTION_MWF = { start: 7 * 60, end: 21 * 60, patterns: null };
@@ -419,6 +432,14 @@ function parseRange(t) {
   return { start, end };
 }
 
+// Canonical form of a time-range string for equality comparison —
+// "8:00-9:00", "08:00-09:00", and "8:00am-9:00am" should all match.
+function normalizeTime(t) {
+  const r = parseRange(t);
+  if (!r) return (t || "").toString().trim().toLowerCase();
+  return `${r.start}-${r.end}`;
+}
+
 function slotRowIndex(min) {
   return Math.floor((min - SLOT_START) / SLOT_SIZE);
 }
@@ -454,7 +475,8 @@ function detectConflicts(bkList) {
 }
 
 // ── WEEKLY SCHEDULE (30-min rowspan) ─────────────────────
-function buildSchedTable(headEl, bodyEl, roomFilter) {
+function buildSchedTable(headEl, bodyEl, roomFilter, daysOverride) {
+  const tableDays = daysOverride && daysOverride.length ? daysOverride : DAYS;
   const approved = bookings.filter(
     (b) => b.status !== "rejected" && (!roomFilter || b.room === roomFilter),
   );
@@ -464,7 +486,7 @@ function buildSchedTable(headEl, bodyEl, roomFilter) {
 
   headEl.innerHTML =
     `<th class="time-th" style="width:72px;min-width:72px">Time</th>` +
-    DAYS.map((d) => `<th>${d}</th>`).join("");
+    tableDays.map((d) => `<th>${d}</th>`).join("");
   bodyEl.innerHTML = "";
 
   // Skip map: skip[slotIdx_dayIdx] = true means cell is covered by a rowspan above
@@ -481,7 +503,7 @@ function buildSchedTable(headEl, bodyEl, roomFilter) {
     tc.textContent = slot.label;
     tr.appendChild(tc);
 
-    DAYS.forEach((d, di) => {
+    tableDays.forEach((d, di) => {
       const key = si + "_" + di;
       if (skip[key]) {
         return;
@@ -1896,6 +1918,8 @@ async function changePassword() {
 
 // ── IMPORT ────────────────────────────────────────────────
 let importRows = [];
+let importSelectedRow = null;
+let importListRendered = false;
 
 function resetImport() {
   document.getElementById("import-step1").style.display = "";
@@ -1906,6 +1930,8 @@ function resetImport() {
   const fi = document.getElementById("import-file-input");
   if (fi) fi.value = "";
   importRows = [];
+  importSelectedRow = null;
+  importListRendered = false;
 }
 
 async function handleImportFile(input) {
@@ -1959,9 +1985,110 @@ function showImportPreview(aiUsed) {
     r.conflict = !!c;
   });
 
+  renderImportList();
+
+  // On first load, auto-select the first row that needs attention so the
+  // panel isn't empty. On subsequent re-renders, keep whatever's selected.
+  const isFirstRender = importSelectedRow === null && !importListRendered;
+  if (isFirstRender) {
+    const firstIssue = importRows.findIndex((r) => r.flagged || r.conflict);
+    importSelectedRow =
+      firstIssue !== -1 ? firstIssue : importRows.length ? 0 : null;
+  }
+  importListRendered = true;
+
+  if (
+    importSelectedRow != null &&
+    importRows[importSelectedRow] !== undefined
+  ) {
+    selectImportRow(importSelectedRow);
+  } else {
+    importSelectedRow = null;
+    document.getElementById("import-detail-panel").innerHTML =
+      '<div class="import-detail-empty">Select an entry from the list to view its details.</div>';
+  }
+
+  document.getElementById("import-confirm-btn").textContent =
+    `✅ Confirm Import (${valid.length} entries)`;
+}
+
+function importRowStatus(r) {
+  if (r.conflict && !r.flagged) return "conflict";
+  if (r.flagged) return "flagged";
+  return "ready";
+}
+
+function selectImportRow(idx) {
+  importSelectedRow = idx;
+  document
+    .querySelectorAll(".import-list-item")
+    .forEach((el) => el.classList.remove("selected"));
+  const el = document.getElementById(`import-list-item-${idx}`);
+  if (el) el.classList.add("selected");
+  renderImportDetail(idx);
+}
+
+function renderImportList() {
   const bd = document.getElementById("import-preview-bd");
+  bd.innerHTML = importRows
+    .map((r, i) => {
+      const status = importRowStatus(r);
+      const icon =
+        status === "ready" ? "✅" : status === "conflict" ? "🔴" : "⚠️";
+      const subLine =
+        status === "ready"
+          ? `${r.room || "—"} · ${r.day || "—"} · ${r.time || "—"}`
+          : status === "conflict"
+            ? "Schedule conflict — will skip"
+            : r.flag_reason || "Needs review";
+      return `<button
+        type="button"
+        class="import-list-item status-${status}${i === importSelectedRow ? " selected" : ""}"
+        id="import-list-item-${i}"
+        onclick="selectImportRow(${i})"
+      >
+        <span class="il-num">#${i + 1}</span>
+        <span class="il-main">
+          <span class="il-title">${r.prof || "(no faculty)"} · ${r.subj || "—"}</span>
+          <span class="il-sub">${subLine}</span>
+        </span>
+        <span class="il-icon">${icon}</span>
+      </button>`;
+    })
+    .join("");
+}
+
+function renderImportDetail(idx) {
+  const panel = document.getElementById("import-detail-panel");
+  const r = importRows[idx];
+  if (!r) {
+    panel.innerHTML =
+      '<div class="import-detail-empty">Select an entry from the list to view its details.</div>';
+    return;
+  }
+
+  const status = importRowStatus(r);
+
+  if (status === "ready") {
+    panel.innerHTML = `
+      <div class="import-detail-ok">
+        <div class="ido-icon">✅</div>
+        <div class="ido-title">No issues found</div>
+        <div class="ido-sub">Entry #${idx + 1} is ready to import as-is.</div>
+        <div class="ido-summary">
+          <span><strong>Faculty:</strong> ${r.prof || "—"}</span>
+          <span><strong>Course:</strong> ${r.subj || "—"}</span>
+          <span><strong>Group:</strong> ${r.group || "—"}</span>
+          <span><strong>Room:</strong> ${r.room || "—"}</span>
+          <span><strong>Day:</strong> ${r.day || "—"}</span>
+          <span><strong>Time:</strong> ${r.time || "—"}</span>
+        </div>
+      </div>`;
+    return;
+  }
+
   const roomOpts = rooms
-    .map((r) => `<option value="${r.name}">${r.name}</option>`)
+    .map((rm) => `<option value="${rm.name}">${rm.name}</option>`)
     .join("");
   const dayOpts = [
     "MWF",
@@ -1979,45 +2106,46 @@ function showImportPreview(aiUsed) {
     .map((d) => `<option value="${d}">${d}</option>`)
     .join("");
 
-  bd.innerHTML = importRows
-    .map((r, i) => {
-      let cls = "ok",
-        statusTxt = "✅ Ready";
-      if (r.flagged) {
-        cls = "flagged";
-        statusTxt = `⚠️ ${r.flag_reason || "Needs review"}`;
-      } else if (r.conflict) {
-        cls = "conflict";
-        statusTxt = "🔴 Conflict — will skip";
-      }
+  const isConflictRow = status === "conflict";
+  const statusMsg = isConflictRow
+    ? "🔴 Schedule conflict detected — will skip"
+    : `⚠️ ${r.flag_reason || "Needs review"}`;
 
-      if (r.flagged) {
-        const profF = `<input value="${(r.prof || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'prof',this.value)" style="width:100px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
-        const subjF = `<input value="${(r.subj || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'subj',this.value)" style="width:65px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
-        const groupF = `<input value="${(r.group || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'group',this.value)" style="width:75px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
-        const roomF = `<select onchange="updateImportRow(${i},'room',this.value)" style="font-size:10px;padding:2px 3px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)"><option value="${r.room || ""}">${r.room || "Select..."}</option>${roomOpts}</select>`;
-        const dayF = `<select onchange="updateImportRow(${i},'day',this.value)" style="font-size:10px;padding:2px 3px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)"><option value="${r.day || ""}">${r.day || "Select..."}</option>${dayOpts}</select>`;
-        const timeF = `<input value="${(r.time || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${i},'time',this.value)" placeholder="08:00-09:00" style="width:75px;font-size:10px;padding:2px 4px;border:1px solid var(--amber);border-radius:3px;background:var(--s2);color:var(--text)">`;
-        const fixBtn = `<button onclick="validateImportRow(${i})" style="font-size:9px;padding:2px 6px;background:var(--green);color:#fff;border:none;border-radius:3px;cursor:pointer;white-space:nowrap">✓ Fix</button>`;
-        return `<tr class="${cls}" id="import-row-${i}">
-        <td style="font-size:10px">${i + 1}</td>
-        <td>${profF}</td><td>${subjF}</td><td>${groupF}</td>
-        <td>${roomF}</td><td>${dayF}</td><td>${timeF}</td>
-        <td style="font-size:10px">${statusTxt}<br>${fixBtn}</td>
-      </tr>`;
-      }
-      return `<tr class="${cls}" id="import-row-${i}">
-      <td style="font-size:10px">${i + 1}</td>
-      <td>${r.prof || "—"}</td><td>${r.subj || "—"}</td><td>${r.group || "—"}</td>
-      <td>${r.room || "—"}</td><td>${r.day || "—"}</td><td>${r.time || "—"}</td>
-      <td style="font-size:10px">${statusTxt}</td>
-    </tr>`;
-    })
-    .join("");
+  const profF = `<div class="ir-field"><label>Faculty</label><input value="${(r.prof || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${idx},'prof',this.value)"></div>`;
+  const subjF = `<div class="ir-field"><label>Course Code</label><input value="${(r.subj || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${idx},'subj',this.value)"></div>`;
+  const groupF = `<div class="ir-field"><label>Group / Section</label><input value="${(r.group || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${idx},'group',this.value)"></div>`;
+  const roomF = `<div class="ir-field"><label>Room</label><select onchange="updateImportRow(${idx},'room',this.value)"><option value="${r.room || ""}">${r.room || "Select a room..."}</option>${roomOpts}</select></div>`;
+  const dayF = `<div class="ir-field"><label>Day</label><select onchange="updateImportRow(${idx},'day',this.value)"><option value="${r.day || ""}">${r.day || "Select a day..."}</option>${dayOpts}</select></div>`;
+  const timeF = `<div class="ir-field"><label>Time</label><input value="${(r.time || "").replace(/"/g, "&quot;")}" onchange="updateImportRow(${idx},'time',this.value)" placeholder="08:00-09:00"></div>`;
 
-  const readyCount = importRows.filter((r) => !r.flagged && !r.conflict).length;
-  document.getElementById("import-confirm-btn").textContent =
-    `✅ Confirm Import (${readyCount} entries)`;
+  const isUnregisteredRoom = (r.flag_reason || "").startsWith(
+    "Room not in system",
+  );
+  let actions;
+  if (isUnregisteredRoom) {
+    const typeSelId = `room-type-${idx}`;
+    actions = `
+      <select id="${typeSelId}" class="ir-type-select">
+        <option value="Lecture Room">Lecture Room</option>
+        <option value="Computer Lab">Computer Lab</option>
+        <option value="Conference Room">Conference Room</option>
+        <option value="Function Hall">Function Hall</option>
+      </select>
+      <button class="ir-btn primary" onclick="addRoomFromImport(${idx}, document.getElementById('${typeSelId}').value)">+ Add This Room</button>
+      <button class="ir-btn secondary" onclick="validateImportRow(${idx})" title="Use this if you picked an existing room from the dropdown above instead">Use Selected Room</button>`;
+  } else {
+    actions = `<button class="ir-btn primary" onclick="validateImportRow(${idx})">✓ Re-check Row</button>`;
+  }
+
+  panel.innerHTML = `
+    <div class="ir-card-hd">
+      <span class="ir-num">#${idx + 1}</span>
+      <span class="ir-status-msg${isConflictRow ? " conflict" : ""}">${statusMsg}</span>
+    </div>
+    <div class="ir-field-grid">
+      ${profF}${subjF}${groupF}${roomF}${dayF}${timeF}
+    </div>
+    <div class="ir-actions">${actions}</div>`;
 }
 
 async function confirmImport() {
@@ -2052,26 +2180,52 @@ async function confirmImport() {
 }
 
 // Quick add room from import preview
-async function quickAddRoom(roomName, rowIdx) {
+async function quickAddRoom(roomName, rowIdx, roomType) {
   if (!roomName) return;
   try {
     await API.post("rooms", {
       name: roomName,
-      type: "Lecture Room",
+      type: roomType || "Lecture Room",
       cap: 40,
       floor: "Ground Floor",
     });
     await loadAdminData();
-    // Mark row as no longer flagged
-    if (importRows[rowIdx]) {
-      importRows[rowIdx].flagged = false;
-      importRows[rowIdx].flag_reason = "";
-    }
+    // Un-flag every row referencing this room, not just the one clicked —
+    // the same room can appear in multiple rows in a single import batch.
+    let fixedCount = 0;
+    importRows.forEach((row) => {
+      if (
+        row.room === roomName &&
+        (row.flag_reason || "").startsWith("Room not in system")
+      ) {
+        row.flagged = false;
+        row.flag_reason = "";
+        fixedCount++;
+      }
+    });
     showImportPreview(false);
-    toast(`✅ Room "${roomName}" added.`);
+    toast(
+      fixedCount > 1
+        ? `✅ Room "${roomName}" added as ${roomType || "Lecture Room"}. Fixed ${fixedCount} matching rows.`
+        : `✅ Room "${roomName}" added as ${roomType || "Lecture Room"}.`,
+    );
   } catch (e) {
     toast(`⚠️ Could not add room: ${e.message}`);
   }
+}
+
+// Triggered by the "+ Add Room" button on unregistered-room import rows
+async function addRoomFromImport(rowIdx, roomType) {
+  const r = importRows[rowIdx];
+  if (!r || !r.room) {
+    toast("⚠️ No room name set for this row.");
+    return;
+  }
+  if (!roomType) {
+    toast("⚠️ Please select a room type first.");
+    return;
+  }
+  await quickAddRoom(r.room, rowIdx, roomType);
 }
 
 // Update import row field inline
@@ -2084,13 +2238,26 @@ function validateImportRow(idx) {
   const r = importRows[idx];
   if (!r) return;
   const missing = [];
-  if (!r.prof) missing.push("Faculty");
-  if (!r.subj) missing.push("Course Code");
+  if (!r.prof) missing.push("Faculty name");
+  if (!r.subj) missing.push("Course code");
   if (!r.room) missing.push("Room");
   if (!r.day) missing.push("Day");
   if (!r.time) missing.push("Time");
   if (missing.length) {
+    r.flagged = true;
+    r.flag_reason = `Missing: ${missing.join(", ")}`;
+    showImportPreview(false);
     toast(`⚠️ Row ${idx + 1} still missing: ${missing.join(", ")}`);
+    return;
+  }
+  // Check room is registered
+  const roomExists = rooms.some((rm) => rm.name === r.room);
+  if (!roomExists) {
+    r.flagged = true;
+    r.flag_reason = `Room not in system: ${r.room}`;
+    r.conflict = false;
+    showImportPreview(false);
+    toast(`⚠️ Row ${idx + 1}: "${r.room}" still isn't a registered room.`);
     return;
   }
   // Check conflict
@@ -2102,8 +2269,8 @@ function validateImportRow(idx) {
       b.status === "approved",
   );
   if (c) {
-    r.flagged = true;
-    r.flag_reason = "Conflict with existing booking";
+    r.flagged = false;
+    r.flag_reason = "";
     r.conflict = true;
   } else {
     r.flagged = false;
@@ -2112,8 +2279,8 @@ function validateImportRow(idx) {
   }
   showImportPreview(false);
   toast(
-    r.flagged
-      ? `⚠️ Row ${idx + 1} has a conflict.`
+    r.conflict
+      ? `🔴 Row ${idx + 1}: schedule conflict detected.`
       : `✅ Row ${idx + 1} is ready to import.`,
   );
 }
@@ -2304,14 +2471,51 @@ function doExport(fmt) {
 
 // ── MODAL ─────────────────────────────────────────────────
 function openModal(id) {
-  document.getElementById(id).classList.add("open");
+  const el = document.getElementById(id);
+  el.classList.add("open");
+  modalSnapshots[id] = getModalSnapshot(id);
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove("open");
+  delete modalSnapshots[id];
 }
+
+// ── Unsaved-changes confirmation for all modals ────────────
+const modalSnapshots = {};
+
+function getModalSnapshot(id) {
+  const el = document.getElementById(id);
+  if (!el) return "";
+  const fields = el.querySelectorAll("input, select, textarea");
+  return Array.from(fields)
+    .map((f) => `${f.id || ""}:${f.value}`)
+    .join("|");
+}
+
+function modalHasUnsavedChanges(id) {
+  if (id === "import-modal") {
+    // The import modal regenerates its inputs constantly (every Fix/Add Room
+    // click re-renders the table), so field-diffing would false-positive.
+    // Instead: if a file has been parsed into rows, there's work in progress.
+    return importRows && importRows.length > 0;
+  }
+  if (!(id in modalSnapshots)) return false;
+  return getModalSnapshot(id) !== modalSnapshots[id];
+}
+
+// Use this instead of closeModal() for any user-initiated close
+// (X button, overlay click, Cancel) so unsaved edits aren't lost silently.
+function requestCloseModal(id) {
+  if (modalHasUnsavedChanges(id)) {
+    const ok = confirm("You have unsaved changes. Close anyway and lose them?");
+    if (!ok) return;
+  }
+  closeModal(id);
+}
+
 document.querySelectorAll(".modal-ov").forEach((ov) =>
   ov.addEventListener("click", (e) => {
-    if (e.target === ov) ov.classList.remove("open");
+    if (e.target === ov) requestCloseModal(ov.id);
   }),
 );
 

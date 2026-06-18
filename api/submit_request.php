@@ -1,7 +1,6 @@
 <?php
 // ============================================
 // Submit Room Request
-// api/submit_request.php
 // ============================================
 
 header('Content-Type: application/json');

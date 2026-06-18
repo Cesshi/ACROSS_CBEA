@@ -44,14 +44,16 @@
       <div class="modal" style="max-width: 400px">
         <div class="modal-hd">
           <h2>Request Notes</h2>
-          <button class="modal-x" onclick="closeModal('notes-modal')">×</button>
+          <button class="modal-x" onclick="requestCloseModal('notes-modal')">
+            ×
+          </button>
         </div>
         <p style="font-size: 12px; color: var(--t2); margin-bottom: 10px">
           Notes from the requestee:
         </p>
         <div class="notes-view" id="notes-view-content"></div>
         <div class="divider"></div>
-        <button class="btn-save" onclick="closeModal('notes-modal')">
+        <button class="btn-save" onclick="requestCloseModal('notes-modal')">
           Close
         </button>
       </div>
@@ -62,7 +64,9 @@
       <div class="modal">
         <div class="modal-hd">
           <h2 id="rm-title">Add Room</h2>
-          <button class="modal-x" onclick="closeModal('room-modal')">×</button>
+          <button class="modal-x" onclick="requestCloseModal('room-modal')">
+            ×
+          </button>
         </div>
         <div class="form-grid">
           <div class="fg">
@@ -94,7 +98,7 @@
         </div>
         <div class="divider"></div>
         <button class="btn-save" onclick="saveRoom()">Save Room</button>
-        <button class="btn-cancel" onclick="closeModal('room-modal')">
+        <button class="btn-cancel" onclick="requestCloseModal('room-modal')">
           Cancel
         </button>
       </div>
@@ -105,7 +109,10 @@
       <div class="modal">
         <div class="modal-hd">
           <h2 id="bk-title">Add Reservation</h2>
-          <button class="modal-x" onclick="closeModal('reservation-modal')">
+          <button
+            class="modal-x"
+            onclick="requestCloseModal('reservation-modal')"
+          >
             ×
           </button>
         </div>
@@ -167,7 +174,10 @@
         <button class="btn-save" onclick="saveBooking()">
           Save Reservation
         </button>
-        <button class="btn-cancel" onclick="closeModal('reservation-modal')">
+        <button
+          class="btn-cancel"
+          onclick="requestCloseModal('reservation-modal')"
+        >
           Cancel
         </button>
       </div>
@@ -178,20 +188,20 @@
       <div class="modal" style="max-width: 900px; padding: 0; overflow: hidden">
         <div
           class="modal-hd"
-          style="padding: 16px 20px; border-bottom: 1px solid var(--border)"
+          style="padding: 20px 24px; border-bottom: 1px solid var(--border)"
         >
           <div>
             <h2>Import Schedule</h2>
-            <p style="font-size: 12px; color: var(--t2); margin-top: 2px">
+            <p style="font-size: 12px; color: var(--t2); margin-top: 4px">
               Upload an Excel or CSV file to auto-generate the schedule using
               AI.
             </p>
           </div>
-          <button class="modal-x" onclick="closeModal('import-modal')">
+          <button class="modal-x" onclick="requestCloseModal('import-modal')">
             ×
           </button>
         </div>
-        <div id="import-body" style="padding: 20px">
+        <div id="import-body" style="padding: 24px">
           <!-- Step 1: Upload -->
           <div id="import-step1">
             <div
@@ -199,8 +209,10 @@
               id="import-drop"
               onclick="document.getElementById('import-file-input').click()"
             >
-              <div style="font-size: 32px; margin-bottom: 8px">📂</div>
-              <div style="font-weight: 600; margin-bottom: 4px">
+              <div style="font-size: 36px; margin-bottom: 10px">📂</div>
+              <div
+                style="font-weight: 600; margin-bottom: 4px; font-size: 14px"
+              >
                 Click to upload or drag & drop
               </div>
               <div style="font-size: 12px; color: var(--t3)">
@@ -214,14 +226,14 @@
               style="display: none"
               onchange="handleImportFile(this)"
             />
-            <div class="alert info" id="import-info" style="margin-top: 12px">
+            <div class="alert info" id="import-info" style="margin-top: 16px">
               <span class="alert-icon">ℹ️</span
               ><span
                 >The AI will read your file and map each entry to the correct
                 room, day pattern, and time slot.</span
               >
             </div>
-            <div class="alert danger" id="import-err" style="margin-top: 12px">
+            <div class="alert danger" id="import-err" style="margin-top: 16px">
               <span class="alert-icon">🚫</span
               ><span id="import-err-msg"></span>
             </div>
@@ -233,7 +245,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 12px;
+                margin-bottom: 10px;
                 flex-wrap: wrap;
                 gap: 8px;
               "
@@ -258,30 +270,20 @@
                 </button>
               </div>
             </div>
-            <div style="font-size: 11px; color: var(--t3); margin-bottom: 8px">
-              🔴 Red rows have conflicts or missing data and will be skipped. ✅
-              Green rows will be imported.
-            </div>
-            <div style="overflow-x: auto; max-height: 400px; overflow-y: auto">
-              <table
-                class="data"
-                id="import-preview-tbl"
-                style="font-size: 11px"
+            <div class="import-legend">
+              <span><span class="dot red"></span> Conflict — will skip</span>
+              <span
+                ><span class="dot orange"></span> Missing data — needs fix</span
               >
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Faculty</th>
-                    <th>Course Code</th>
-                    <th>Group</th>
-                    <th>Room</th>
-                    <th>Day</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="import-preview-bd"></tbody>
-              </table>
+              <span><span class="dot green"></span> Ready to import</span>
+            </div>
+            <div class="import-split">
+              <div class="import-split-list" id="import-preview-bd"></div>
+              <div class="import-split-panel" id="import-detail-panel">
+                <div class="import-detail-empty">
+                  Select an entry from the list to view its details.
+                </div>
+              </div>
             </div>
           </div>
           <!-- Loading -->
@@ -310,7 +312,7 @@
       <div class="modal" style="max-width: 420px">
         <div class="modal-hd">
           <h2>Change Password</h2>
-          <button class="modal-x" onclick="closeModal('password-modal')">
+          <button class="modal-x" onclick="requestCloseModal('password-modal')">
             ×
           </button>
         </div>
@@ -350,7 +352,10 @@
         <button class="btn-save" onclick="changePassword()">
           Save Password
         </button>
-        <button class="btn-cancel" onclick="closeModal('password-modal')">
+        <button
+          class="btn-cancel"
+          onclick="requestCloseModal('password-modal')"
+        >
           Cancel
         </button>
       </div>
@@ -361,7 +366,7 @@
       <div class="modal" style="max-width: 600px">
         <div class="modal-hd">
           <h2>Export Data</h2>
-          <button class="modal-x" onclick="closeModal('export-modal')">
+          <button class="modal-x" onclick="requestCloseModal('export-modal')">
             ×
           </button>
         </div>
@@ -415,7 +420,10 @@
           <button class="btn-ghost" onclick="doExport('csv')">
             ⬇ Export as CSV
           </button>
-          <button class="btn-cancel" onclick="closeModal('export-modal')">
+          <button
+            class="btn-cancel"
+            onclick="requestCloseModal('export-modal')"
+          >
             Cancel
           </button>
         </div>
@@ -427,7 +435,9 @@
       <div class="modal" style="max-width: 420px">
         <div class="modal-hd">
           <h2 id="clear-modal-title">⚠️ Are you sure?</h2>
-          <button class="modal-x" onclick="closeModal('clear-modal')">×</button>
+          <button class="modal-x" onclick="requestCloseModal('clear-modal')">
+            ×
+          </button>
         </div>
         <div class="alert caution show" style="margin-bottom: 16px">
           <span class="alert-icon">⚠️</span
@@ -441,7 +451,7 @@
           <button class="btn-danger" id="clear-modal-confirm">
             Yes, proceed
           </button>
-          <button class="btn-cancel" onclick="closeModal('clear-modal')">
+          <button class="btn-cancel" onclick="requestCloseModal('clear-modal')">
             Cancel
           </button>
         </div>
@@ -453,7 +463,7 @@
       <div class="modal" style="max-width: 560px">
         <div class="modal-hd">
           <h2>Vacant Rooms</h2>
-          <button class="modal-x" onclick="closeModal('vacant-modal')">
+          <button class="modal-x" onclick="requestCloseModal('vacant-modal')">
             ×
           </button>
         </div>
@@ -495,7 +505,10 @@
               Click a vacant slot to select it.
             </p>
           </div>
-          <button class="modal-x" onclick="closeModal('sched-picker-modal')">
+          <button
+            class="modal-x"
+            onclick="requestCloseModal('sched-picker-modal')"
+          >
             ×
           </button>
         </div>
@@ -1018,252 +1031,262 @@
         </div>
       </nav>
       <div class="land-body" style="padding-top: 16px">
-        <!-- Weekly view -->
-        <div id="fac-weekly-view">
-          <div class="land-sched-wrap">
-            <div class="land-sched-hd">
-              <h3>Weekly Schedule</h3>
-              <select id="fac-room-f" onchange="renderFacSched()">
-                <option value="">All Rooms</option>
-              </select>
-            </div>
-            <div class="sched-wrap" style="padding: 0 14px 14px">
-              <table class="sched-table">
-                <thead>
-                  <tr id="fac-sched-hd"></tr>
-                </thead>
-                <tbody id="fac-sched-bd"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <!-- Grid view (rooms as columns, MWF/TTH/SAT sections) -->
-        <div id="fac-grid-view" style="display: none">
-          <div class="card" style="margin: 0 14px 24px">
-            <div class="card-hd">
-              <h3>Room Utilization Grid</h3>
-              <select
-                id="fac-grid-room-f"
-                onchange="renderFacGrid()"
-                style="font-size: 12px; padding: 5px 9px"
-              >
-                <option value="">All Rooms</option>
-              </select>
-            </div>
-            <div id="fac-grid-wrap" style="overflow-x: auto"></div>
-          </div>
-        </div>
-        <!-- Request form -->
-        <div
-          class="req-section"
-          id="fac-req-anchor"
-          style="margin: 0 14px 40px"
-        >
-          <h2>Request a Room</h2>
-          <p class="sub">
-            Fill in the details below. The scheduling head will review your
-            request.
-          </p>
-          <div class="form-grid">
-            <div class="fg">
-              <label class="lbl">Your Name</label
-              ><input type="text" id="fac-name" placeholder="Prof. Santos" />
-            </div>
-            <div class="fg">
-              <label class="lbl">Course Code</label
-              ><input type="text" id="fac-subj" placeholder="ACC 194" />
-            </div>
-            <div class="fg">
-              <label class="lbl">Course / Year / Section</label
-              ><input type="text" id="fac-group" placeholder="BS ACC 2A" />
-            </div>
-            <div class="fg">
-              <label class="lbl"
-                >Email
-                <span style="font-weight: 400; color: var(--t3)"
-                  >(optional)</span
-                ></label
-              ><input
-                type="email"
-                id="fac-email"
-                placeholder="prof@mmsu.edu.ph"
-              />
-            </div>
-            <div class="fg">
-              <label class="lbl">Request Type</label>
-              <select id="fac-reqtype" onchange="onFacReqTypeChange()">
-                <option value="new">New Schedule</option>
-                <option value="change">Change Existing Schedule</option>
-              </select>
-            </div>
-            <div class="fg full" id="fac-new-zone">
-              <label class="lbl">Preferred Room</label>
-              <select
-                id="fac-room"
-                onchange="onFacNewRoomChange()"
-                style="margin-top: 5px"
-              ></select>
-              <div
-                class="slot-selected-display"
-                id="fac-new-slot-display"
-                style="display: none"
-              >
-                <span class="slot-display-icon">📍</span>
-                <span id="fac-new-slot-text"></span>
-                <button
-                  onclick="clearFacNewSlot()"
-                  style="
-                    background: none;
-                    border: none;
-                    color: var(--t3);
-                    cursor: pointer;
-                    font-size: 12px;
-                    margin-left: auto;
-                  "
-                >
-                  ✕ Clear
-                </button>
+        <div class="fac-main-grid">
+          <!-- Weekly view -->
+          <div id="fac-weekly-view" class="fac-main-col-sched">
+            <div class="land-sched-wrap">
+              <div class="land-sched-hd">
+                <h3>Weekly Schedule</h3>
+                <select id="fac-room-f" onchange="renderFacSched()">
+                  <option value="">All Rooms</option>
+                </select>
               </div>
-              <div
-                class="alert info"
-                id="fac-room-info"
-                style="margin-top: 8px"
-              >
-                <span class="alert-icon">ℹ️</span
-                ><span
-                  >Select a room to view its schedule and pick a slot.</span
-                >
+              <div class="sched-wrap" style="padding: 0 14px 14px">
+                <table class="sched-table">
+                  <thead>
+                    <tr id="fac-sched-hd"></tr>
+                  </thead>
+                  <tbody id="fac-sched-bd"></tbody>
+                </table>
               </div>
             </div>
-            <div class="fg full" id="fac-change-zone" style="display: none">
-              <div class="from-to-grid">
-                <div class="from-to-card from-card">
-                  <div class="ftc-header">
-                    <span class="ftc-badge from-badge">FROM</span
-                    ><span class="ftc-title">Current Slot</span>
-                  </div>
-                  <label class="lbl" style="margin-bottom: 5px; display: block"
-                    >Current Room</label
-                  >
-                  <select
-                    id="fac-from-room"
-                    onchange="onFacFromRoomChange()"
-                    style="width: 100%; margin-bottom: 10px"
-                  ></select>
-                  <div
-                    class="slot-selected-display"
-                    id="fac-from-display"
-                    style="display: none"
-                  >
-                    <span class="slot-display-icon">📍</span
-                    ><span id="fac-from-text"></span>
-                    <button
-                      onclick="clearFacFromSlot()"
-                      style="
-                        background: none;
-                        border: none;
-                        color: var(--t3);
-                        cursor: pointer;
-                        font-size: 12px;
-                        margin-left: auto;
-                      "
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div
-                    id="fac-from-hint"
+          </div>
+          <!-- Grid view (rooms as columns, MWF/TTH/SAT sections) -->
+          <div
+            id="fac-grid-view"
+            class="fac-main-col-sched"
+            style="display: none"
+          >
+            <div class="card" style="margin: 0">
+              <div class="card-hd">
+                <h3>Room Utilization Grid</h3>
+                <select
+                  id="fac-grid-room-f"
+                  onchange="renderFacGrid()"
+                  style="font-size: 12px; padding: 5px 9px"
+                >
+                  <option value="">All Rooms</option>
+                </select>
+              </div>
+              <div id="fac-grid-wrap" style="overflow-x: auto"></div>
+            </div>
+          </div>
+          <!-- Request form -->
+          <div class="req-section fac-main-col-form" id="fac-req-anchor">
+            <h2>Request a Room</h2>
+            <p class="sub">
+              Fill in the details below. The scheduling head will review your
+              request.
+            </p>
+            <div class="form-grid">
+              <div class="fg">
+                <label class="lbl">Your Name</label
+                ><input type="text" id="fac-name" placeholder="Prof. Santos" />
+              </div>
+              <div class="fg">
+                <label class="lbl">Course Code</label
+                ><input type="text" id="fac-subj" placeholder="ACC 194" />
+              </div>
+              <div class="fg">
+                <label class="lbl">Course / Year / Section</label
+                ><input type="text" id="fac-group" placeholder="BS ACC 2A" />
+              </div>
+              <div class="fg">
+                <label class="lbl"
+                  >Email
+                  <span style="font-weight: 400; color: var(--t3)"
+                    >(optional)</span
+                  ></label
+                ><input
+                  type="email"
+                  id="fac-email"
+                  placeholder="prof@mmsu.edu.ph"
+                />
+              </div>
+              <div class="fg">
+                <label class="lbl">Request Type</label>
+                <select id="fac-reqtype" onchange="onFacReqTypeChange()">
+                  <option value="new">New Schedule</option>
+                  <option value="change">Change Existing Schedule</option>
+                </select>
+              </div>
+              <div class="fg full" id="fac-new-zone">
+                <label class="lbl">Preferred Room</label>
+                <select
+                  id="fac-room"
+                  onchange="onFacNewRoomChange()"
+                  style="margin-top: 5px"
+                ></select>
+                <div
+                  class="slot-selected-display"
+                  id="fac-new-slot-display"
+                  style="display: none"
+                >
+                  <span class="slot-display-icon">📍</span>
+                  <span id="fac-new-slot-text"></span>
+                  <button
+                    onclick="clearFacNewSlot()"
                     style="
-                      font-size: 11px;
+                      background: none;
+                      border: none;
                       color: var(--t3);
-                      font-style: italic;
+                      cursor: pointer;
+                      font-size: 12px;
+                      margin-left: auto;
                     "
                   >
-                    Select a room to view its schedule
-                  </div>
+                    ✕ Clear
+                  </button>
                 </div>
-                <div class="from-to-card to-card">
-                  <div class="ftc-header">
-                    <span class="ftc-badge to-badge">TO</span
-                    ><span class="ftc-title">New Slot</span>
-                  </div>
-                  <label class="lbl" style="margin-bottom: 5px; display: block"
-                    >Destination Room</label
+                <div
+                  class="alert info"
+                  id="fac-room-info"
+                  style="margin-top: 8px"
+                >
+                  <span class="alert-icon">ℹ️</span
+                  ><span
+                    >Select a room to view its schedule and pick a slot.</span
                   >
-                  <select
-                    id="fac-to-room"
-                    onchange="onFacToRoomChange()"
-                    style="width: 100%; margin-bottom: 10px"
-                  ></select>
-                  <div
-                    class="slot-selected-display"
-                    id="fac-to-display"
-                    style="display: none"
-                  >
-                    <span class="slot-display-icon">📍</span
-                    ><span id="fac-to-text"></span>
-                    <button
-                      onclick="clearFacToSlot()"
+                </div>
+              </div>
+              <div class="fg full" id="fac-change-zone" style="display: none">
+                <div class="from-to-grid">
+                  <div class="from-to-card from-card">
+                    <div class="ftc-header">
+                      <span class="ftc-badge from-badge">FROM</span
+                      ><span class="ftc-title">Current Slot</span>
+                    </div>
+                    <label
+                      class="lbl"
+                      style="margin-bottom: 5px; display: block"
+                      >Current Room</label
+                    >
+                    <select
+                      id="fac-from-room"
+                      onchange="onFacFromRoomChange()"
+                      style="width: 100%; margin-bottom: 10px"
+                    ></select>
+                    <div
+                      class="slot-selected-display"
+                      id="fac-from-display"
+                      style="display: none"
+                    >
+                      <span class="slot-display-icon">📍</span
+                      ><span id="fac-from-text"></span>
+                      <button
+                        onclick="clearFacFromSlot()"
+                        style="
+                          background: none;
+                          border: none;
+                          color: var(--t3);
+                          cursor: pointer;
+                          font-size: 12px;
+                          margin-left: auto;
+                        "
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div
+                      id="fac-from-hint"
                       style="
-                        background: none;
-                        border: none;
+                        font-size: 11px;
                         color: var(--t3);
-                        cursor: pointer;
-                        font-size: 12px;
-                        margin-left: auto;
+                        font-style: italic;
                       "
                     >
-                      ✕
-                    </button>
+                      Select a room to view its schedule
+                    </div>
                   </div>
-                  <div
-                    id="fac-to-hint"
-                    style="
-                      font-size: 11px;
-                      color: var(--t3);
-                      font-style: italic;
-                    "
-                  >
-                    Select a room to view its schedule
+                  <div class="from-to-card to-card">
+                    <div class="ftc-header">
+                      <span class="ftc-badge to-badge">TO</span
+                      ><span class="ftc-title">New Slot</span>
+                    </div>
+                    <label
+                      class="lbl"
+                      style="margin-bottom: 5px; display: block"
+                      >Destination Room</label
+                    >
+                    <select
+                      id="fac-to-room"
+                      onchange="onFacToRoomChange()"
+                      style="width: 100%; margin-bottom: 10px"
+                    ></select>
+                    <div
+                      class="slot-selected-display"
+                      id="fac-to-display"
+                      style="display: none"
+                    >
+                      <span class="slot-display-icon">📍</span
+                      ><span id="fac-to-text"></span>
+                      <button
+                        onclick="clearFacToSlot()"
+                        style="
+                          background: none;
+                          border: none;
+                          color: var(--t3);
+                          cursor: pointer;
+                          font-size: 12px;
+                          margin-left: auto;
+                        "
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div
+                      id="fac-to-hint"
+                      style="
+                        font-size: 11px;
+                        color: var(--t3);
+                        font-style: italic;
+                      "
+                    >
+                      Select a room to view its schedule
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="change-summary"
+                  id="fac-change-summary"
+                  style="margin-top: 12px"
+                >
+                  <div class="cs-row" style="background: var(--rl)">
+                    <span class="cs-lbl from">From</span
+                    ><span class="cs-val" id="fac-cs-from">—</span>
+                  </div>
+                  <div class="cs-row" style="background: var(--gl)">
+                    <span class="cs-lbl to">To</span
+                    ><span class="cs-val" id="fac-cs-to">—</span>
                   </div>
                 </div>
               </div>
-              <div
-                class="change-summary"
-                id="fac-change-summary"
-                style="margin-top: 12px"
-              >
-                <div class="cs-row" style="background: var(--rl)">
-                  <span class="cs-lbl from">From</span
-                  ><span class="cs-val" id="fac-cs-from">—</span>
-                </div>
-                <div class="cs-row" style="background: var(--gl)">
-                  <span class="cs-lbl to">To</span
-                  ><span class="cs-val" id="fac-cs-to">—</span>
-                </div>
+              <input type="hidden" id="fac-day" />
+              <input type="hidden" id="fac-time" />
+              <div class="fg full">
+                <label class="lbl">Notes (optional)</label
+                ><textarea
+                  id="fac-notes"
+                  placeholder="Any additional information..."
+                ></textarea>
               </div>
             </div>
-            <input type="hidden" id="fac-day" />
-            <input type="hidden" id="fac-time" />
-            <div class="fg full">
-              <label class="lbl">Notes (optional)</label
-              ><textarea
-                id="fac-notes"
-                placeholder="Any additional information..."
-              ></textarea>
+            <div
+              class="alert danger"
+              id="fac-conflict"
+              style="margin-top: 12px"
+            >
+              <span class="alert-icon">🚫</span
+              ><span id="fac-conflict-msg"></span>
             </div>
-          </div>
-          <div class="alert danger" id="fac-conflict" style="margin-top: 12px">
-            <span class="alert-icon">🚫</span
-            ><span id="fac-conflict-msg"></span>
-          </div>
-          <div class="alert caution" id="fac-warn" style="margin-top: 12px">
-            <span class="alert-icon">⚠️</span><span id="fac-warn-msg"></span>
-          </div>
-          <div style="margin-top: 16px">
-            <button class="btn-save" onclick="submitFacRequest()">
-              Submit Request
-            </button>
+            <div class="alert caution" id="fac-warn" style="margin-top: 12px">
+              <span class="alert-icon">⚠️</span><span id="fac-warn-msg"></span>
+            </div>
+            <div style="margin-top: 16px">
+              <button class="btn-save" onclick="submitFacRequest()">
+                Submit Request
+              </button>
+            </div>
           </div>
         </div>
       </div>
