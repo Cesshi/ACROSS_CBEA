@@ -973,7 +973,10 @@
             </div>
           </div>
           <div class="login-forgot-row">
-            <button class="login-forgot" type="button">Forgot password?</button>
+            <span class="login-forgot-note"
+              >Forgot your password? Contact your system administrator to reset
+              it manually.</span
+            >
           </div>
           <div class="alert danger login-err" id="l-err">
             <span class="alert-icon">🚫</span>Incorrect credentials.
@@ -1031,6 +1034,21 @@
         </div>
       </nav>
       <div class="land-body" style="padding-top: 16px">
+        <!-- WELCOME BANNER -->
+        <div class="welcome-banner">
+          <div class="banner-content">
+            <div class="banner-eyebrow">
+              <span class="banner-eyebrow-dot"></span>
+              Faculty Portal
+            </div>
+            <h1>Welcome back, CBEA Faculty</h1>
+            <p>
+              Manage your class schedule, request room changes, and monitor live
+              room utilization across the campus.
+            </p>
+          </div>
+          <div class="banner-graphic">🏫</div>
+        </div>
         <div class="fac-main-grid">
           <!-- Weekly view -->
           <div id="fac-weekly-view" class="fac-main-col-sched">
@@ -1087,23 +1105,11 @@
                 <label class="lbl">Course Code</label
                 ><input type="text" id="fac-subj" placeholder="ACC 194" />
               </div>
-              <div class="fg">
+              <div class="fg full">
                 <label class="lbl">Course / Year / Section</label
                 ><input type="text" id="fac-group" placeholder="BS ACC 2A" />
               </div>
-              <div class="fg">
-                <label class="lbl"
-                  >Email
-                  <span style="font-weight: 400; color: var(--t3)"
-                    >(optional)</span
-                  ></label
-                ><input
-                  type="email"
-                  id="fac-email"
-                  placeholder="prof@mmsu.edu.ph"
-                />
-              </div>
-              <div class="fg">
+              <div class="fg full">
                 <label class="lbl">Request Type</label>
                 <select id="fac-reqtype" onchange="onFacReqTypeChange()">
                   <option value="new">New Schedule</option>
@@ -1149,126 +1155,144 @@
                   >
                 </div>
               </div>
-              <div class="fg full" id="fac-change-zone" style="display: none">
-                <div class="from-to-grid">
-                  <div class="from-to-card from-card">
-                    <div class="ftc-header">
-                      <span class="ftc-badge from-badge">FROM</span
-                      ><span class="ftc-title">Current Slot</span>
-                    </div>
-                    <label
-                      class="lbl"
-                      style="margin-bottom: 5px; display: block"
-                      >Current Room</label
-                    >
-                    <select
-                      id="fac-from-room"
-                      onchange="onFacFromRoomChange()"
-                      style="width: 100%; margin-bottom: 10px"
-                    ></select>
-                    <div
-                      class="slot-selected-display"
-                      id="fac-from-display"
-                      style="display: none"
-                    >
-                      <span class="slot-display-icon">📍</span
-                      ><span id="fac-from-text"></span>
-                      <button
-                        onclick="clearFacFromSlot()"
-                        style="
-                          background: none;
-                          border: none;
-                          color: var(--t3);
-                          cursor: pointer;
-                          font-size: 12px;
-                          margin-left: auto;
-                        "
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <div
-                      id="fac-from-hint"
-                      style="
-                        font-size: 11px;
-                        color: var(--t3);
-                        font-style: italic;
-                      "
-                    >
-                      Select a room to view its schedule
-                    </div>
-                  </div>
-                  <div class="from-to-card to-card">
-                    <div class="ftc-header">
-                      <span class="ftc-badge to-badge">TO</span
-                      ><span class="ftc-title">New Slot</span>
-                    </div>
-                    <label
-                      class="lbl"
-                      style="margin-bottom: 5px; display: block"
-                      >Destination Room</label
-                    >
-                    <select
-                      id="fac-to-room"
-                      onchange="onFacToRoomChange()"
-                      style="width: 100%; margin-bottom: 10px"
-                    ></select>
-                    <div
-                      class="slot-selected-display"
-                      id="fac-to-display"
-                      style="display: none"
-                    >
-                      <span class="slot-display-icon">📍</span
-                      ><span id="fac-to-text"></span>
-                      <button
-                        onclick="clearFacToSlot()"
-                        style="
-                          background: none;
-                          border: none;
-                          color: var(--t3);
-                          cursor: pointer;
-                          font-size: 12px;
-                          margin-left: auto;
-                        "
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <div
-                      id="fac-to-hint"
-                      style="
-                        font-size: 11px;
-                        color: var(--t3);
-                        font-style: italic;
-                      "
-                    >
-                      Select a room to view its schedule
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="change-summary"
-                  id="fac-change-summary"
-                  style="margin-top: 12px"
-                >
-                  <div class="cs-row" style="background: var(--rl)">
-                    <span class="cs-lbl from">From</span
-                    ><span class="cs-val" id="fac-cs-from">—</span>
-                  </div>
-                  <div class="cs-row" style="background: var(--gl)">
-                    <span class="cs-lbl to">To</span
-                    ><span class="cs-val" id="fac-cs-to">—</span>
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="fac-day" />
-              <input type="hidden" id="fac-time" />
               <div class="fg full">
                 <label class="lbl">Notes (optional)</label
                 ><textarea
                   id="fac-notes"
                   placeholder="Any additional information..."
                 ></textarea>
+              </div>
+            </div>
+            <!-- FROM/TO full-width section — sits outside the form grid -->
+            <div id="fac-change-zone" style="display: none; margin-top: 14px">
+              <div class="from-to-grid">
+                <div class="from-to-card from-card">
+                  <div class="ftc-header">
+                    <span class="ftc-badge from-badge">FROM</span
+                    ><span class="ftc-title">Current Slot</span>
+                  </div>
+                  <label class="lbl" style="margin-bottom: 5px; display: block"
+                    >Current Room</label
+                  >
+                  <select
+                    id="fac-from-room"
+                    onchange="onFacFromRoomChange()"
+                    style="width: 100%; margin-bottom: 10px"
+                  ></select>
+                  <div
+                    id="fac-from-hint"
+                    style="
+                      font-size: 11px;
+                      color: var(--t3);
+                      font-style: italic;
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Select a room then click your existing reservation on the
+                    calendar.
+                  </div>
+                  <div
+                    class="slot-selected-display"
+                    id="fac-from-display"
+                    style="display: none"
+                  >
+                    <span class="slot-display-icon">📍</span
+                    ><span id="fac-from-text"></span>
+                    <button
+                      onclick="clearFacFromSlot()"
+                      style="
+                        background: none;
+                        border: none;
+                        color: var(--t3);
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-left: auto;
+                      "
+                    >
+                      ✕ Clear
+                    </button>
+                  </div>
+                </div>
+                <div class="from-to-card to-card">
+                  <div class="ftc-header">
+                    <span class="ftc-badge to-badge">TO</span
+                    ><span class="ftc-title">New Slot</span>
+                  </div>
+                  <label class="lbl" style="margin-bottom: 5px; display: block"
+                    >Destination Room</label
+                  >
+                  <select
+                    id="fac-to-room"
+                    onchange="onFacToRoomChange()"
+                    style="width: 100%; margin-bottom: 10px"
+                  ></select>
+                  <div
+                    id="fac-to-hint"
+                    style="
+                      font-size: 11px;
+                      color: var(--t3);
+                      font-style: italic;
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Select a room then click a vacant slot to choose the day.
+                  </div>
+                  <div
+                    class="slot-selected-display"
+                    id="fac-to-display"
+                    style="display: none"
+                  >
+                    <span class="slot-display-icon">📍</span
+                    ><span id="fac-to-text"></span>
+                    <button
+                      onclick="clearFacToSlot()"
+                      style="
+                        background: none;
+                        border: none;
+                        color: var(--t3);
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-left: auto;
+                      "
+                    >
+                      ✕ Clear
+                    </button>
+                  </div>
+                  <div
+                    id="fac-to-time-wrap"
+                    style="display: none; margin-top: 10px"
+                  >
+                    <label
+                      class="lbl"
+                      style="margin-bottom: 5px; display: block"
+                      >Requested Time
+                      <span style="color: var(--t3); font-weight: 400"
+                        >(e.g. 10:00-11:30)</span
+                      ></label
+                    >
+                    <input
+                      type="text"
+                      id="fac-to-time-input"
+                      placeholder="e.g. 10:00-11:30"
+                      style="width: 100%; box-sizing: border-box"
+                      oninput="onFacToTimeInput()"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div
+                class="change-summary"
+                id="fac-change-summary"
+                style="margin-top: 12px"
+              >
+                <div class="cs-row" style="background: var(--rl)">
+                  <span class="cs-lbl from">From</span
+                  ><span class="cs-val" id="fac-cs-from">—</span>
+                </div>
+                <div class="cs-row" style="background: var(--gl)">
+                  <span class="cs-lbl to">To</span
+                  ><span class="cs-val" id="fac-cs-to">—</span>
+                </div>
               </div>
             </div>
             <div
@@ -1327,24 +1351,6 @@
           <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
           <button class="btn-ghost" onclick="doLogout()">Logout</button>
         </div>
-        <div class="nav-utility-strip" id="admin-utility-strip">
-          <span class="nav-date-pill" id="admin-nav-date">—</span>
-          <span class="nav-avail-pill" id="admin-nav-avail"
-            >— rooms available</span
-          >
-          <button
-            class="nav-cal-btn"
-            title="Go to Schedule"
-            onclick="
-              showAdminPg(
-                'schedule',
-                document.querySelector('.a-btn[onclick*=schedule]'),
-              )
-            "
-          >
-            📅
-          </button>
-        </div>
       </nav>
       <div class="admin-body">
         <aside class="admin-aside">
@@ -1395,26 +1401,50 @@
             🔑 Change Password
           </button>
           <button
-            class="a-btn"
-            style="color: var(--red)"
+            class="a-btn aside-danger"
             onclick="openClearModal('reservations')"
           >
             🗑 Clear Reservations
           </button>
-          <button
-            class="a-btn"
-            style="color: var(--red)"
-            onclick="openClearModal('rooms')"
-          >
+          <button class="a-btn aside-danger" onclick="openClearModal('rooms')">
             🗑 Clear All Rooms
           </button>
         </aside>
         <div class="admin-main">
+          <div class="nav-utility-strip" id="admin-utility-strip">
+            <span class="nav-date-pill" id="admin-nav-date">—</span>
+            <span class="nav-avail-pill" id="admin-nav-avail"
+              >— rooms available</span
+            >
+            <button
+              class="nav-cal-btn"
+              title="Go to Schedule"
+              onclick="
+                showAdminPg(
+                  'schedule',
+                  document.querySelector('.a-btn[onclick*=schedule]'),
+                )
+              "
+            >
+              📅
+            </button>
+          </div>
           <!-- DASHBOARD -->
           <div class="pg active" id="apg-dashboard">
-            <div class="pg-hd">
-              <h1>Dashboard</h1>
-              <p>Overview of the CBEA scheduling system.</p>
+            <!-- WELCOME BANNER -->
+            <div class="welcome-banner admin-variant">
+              <div class="banner-content">
+                <div class="banner-eyebrow">
+                  <span class="banner-eyebrow-dot"></span>
+                  System Admin
+                </div>
+                <h1>Welcome back, Administrator</h1>
+                <p>
+                  Manage CBEA classroom schedules, approve faculty room
+                  requests, and resolve occupancy conflicts.
+                </p>
+              </div>
+              <div class="banner-graphic">⚙️</div>
             </div>
             <div class="stats">
               <div class="stat hi">
@@ -1448,6 +1478,7 @@
                       <th>Purpose</th>
                       <th>Room</th>
                       <th>Day & Time</th>
+                      <th>Notes</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -1458,7 +1489,7 @@
             </div>
             <div class="card" style="margin-top: 20px">
               <div class="card-hd">
-                <h3>⚠️ Scheduling Conflicts</h3>
+                <h3>Scheduling Conflicts</h3>
                 <span style="font-size: 12px; color: var(--t3)"
                   >Click Resolve to edit directly</span
                 >

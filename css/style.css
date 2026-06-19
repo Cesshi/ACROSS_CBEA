@@ -2819,7 +2819,7 @@ table.data tbody tr:hover td {
   border: none;
   border-bottom: 1.5px solid rgba(30, 80, 50, 0.28);
   border-radius: 0;
-  padding: 8px 2px;
+  padding: 8px 10px;
   font-size: 14px;
   color: #1a1208;
   width: 100%;
@@ -2904,6 +2904,15 @@ table.data tbody tr:hover td {
 }
 [data-theme="dark"] .login-forgot:hover {
   color: #ffffff;
+}
+.login-forgot-note {
+  font-size: 12px;
+  color: rgba(30, 70, 40, 0.45);
+  font-family: var(--font-body);
+  font-style: italic;
+}
+[data-theme="dark"] .login-forgot-note {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 /* CTA button — green pill, consistent across modes */
@@ -6352,7 +6361,7 @@ h3 {
 
 .fac-main-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: 1.3fr 1fr;
   gap: 24px;
   align-items: start;
   padding: 0 clamp(8px, 2vw, 24px) 40px;
@@ -6723,25 +6732,34 @@ label.lbl {
 }
 .card-hd h3 {
   font-family: "Fraunces", serif !important;
-  font-size: 15px !important;
+  font-size: 18px !important;
   font-weight: 700 !important;
   letter-spacing: -0.03em !important;
   color: var(--text) !important;
+  display: flex !important;
+  align-items: center !important;
 }
 .card-hd h3::before {
+  content: "" !important;
+  display: inline-block !important;
   background: var(--orange) !important;
   width: 3px !important;
-  height: 15px !important;
+  height: 18px !important;
   border-radius: 2px !important;
   margin-right: 10px !important;
+  flex-shrink: 0 !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILITY STRIP — Admin nav clock addition and polish
    ───────────────────────────────────────────────────────────────────────── */
 .nav-utility-strip {
-  padding: 7px 0 9px !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+  padding: 8px 24px 8px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-top: none !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 [data-theme="dark"] .nav-utility-strip {
   border-top-color: rgba(255, 255, 255, 0.06) !important;
@@ -6781,11 +6799,11 @@ table.data th {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.92) !important;
   font-family: "Plus Jakarta Sans", sans-serif !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.07em !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
-  padding: 12px 16px !important;
+  padding: 13px 16px !important;
   border-bottom: none !important;
 }
 table.data th:not(:last-child)::after {
@@ -7421,5 +7439,426 @@ a:focus-visible {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   ADMIN & FACULTY UI CONSISTENCY STYLES
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── 1. Brand Role Badges ── */
+.nav-sub {
+  font-family: var(--font-body);
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  border-radius: 4px;
+  padding: 2px 7px !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  margin-left: 6px !important;
+  display: inline-block;
+  transition: background var(--dur-theme) ease, color var(--dur-theme) ease, border-color var(--dur-theme) ease !important;
+}
+
+#screen-faculty .nav-sub {
+  background: var(--pending-bg) !important;
+  color: var(--pending-tx) !important;
+  border: 1px solid var(--pending-bd) !important;
+}
+[data-theme="dark"] #screen-faculty .nav-sub {
+  background: rgba(245, 197, 24, 0.1) !important;
+  color: #e8bf28 !important;
+  border-color: rgba(245, 197, 24, 0.28) !important;
+}
+
+#screen-admin .nav-sub {
+  background: var(--available-bg) !important;
+  color: var(--available-tx) !important;
+  border: 1px solid var(--available-bd) !important;
+}
+[data-theme="dark"] #screen-admin .nav-sub {
+  background: rgba(244, 121, 32, 0.12) !important;
+  color: #f4a055 !important;
+  border-color: rgba(244, 121, 32, 0.28) !important;
+}
+
+/* ── 2. Welcome Banner System ── */
+.welcome-banner {
+  position: relative;
+  border-radius: 18px;
+  padding: clamp(20px, 3.5vw, 32px) clamp(24px, 4vw, 40px);
+  margin-bottom: 24px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 130px;
+  box-shadow: var(--sh-raise);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+.welcome-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../img/wow.jpg") center/cover no-repeat;
+  opacity: 0.15;
+  z-index: 0;
+  filter: brightness(1.05) saturate(1.05);
+}
+[data-theme="dark"] .welcome-banner::before {
+  opacity: 0.08;
+  filter: brightness(0.7) saturate(1);
+}
+.welcome-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 92, 42, 0.94) 0%, rgba(26, 92, 42, 0.65) 100%);
+  z-index: 1;
+}
+[data-theme="dark"] .welcome-banner::after {
+  background: linear-gradient(135deg, rgba(8, 22, 14, 0.95) 0%, rgba(12, 34, 20, 0.75) 100%);
+}
+.welcome-banner.admin-variant::after {
+  background: linear-gradient(135deg, rgba(26, 92, 42, 0.94) 0%, rgba(244, 121, 32, 0.5) 100%);
+}
+[data-theme="dark"] .welcome-banner.admin-variant::after {
+  background: linear-gradient(135deg, rgba(8, 22, 14, 0.96) 0%, rgba(244, 121, 32, 0.2) 100%);
+}
+.banner-content {
+  position: relative;
+  z-index: 2;
+  color: #ffffff;
+  max-width: 650px;
+}
+.banner-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-bottom: 10px;
+  font-family: var(--font-body);
+}
+.banner-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f5c518;
+  box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+.welcome-banner h1 {
+  font-family: var(--font-display) !important;
+  font-size: clamp(20px, 3.2vw, 26px) !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  margin-bottom: 6px;
+  letter-spacing: -0.02em !important;
+}
+.welcome-banner p {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+  margin: 0;
+}
+.banner-graphic {
+  position: relative;
+  z-index: 2;
+  font-size: 48px;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: floatAnim 4s ease-in-out infinite;
+  user-select: none;
+}
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ── 3. Admin Sidebar Overrides ── */
+.admin-aside {
+  gap: 4px !important;
+}
+.a-btn {
+  border: 1.5px solid transparent !important;
+  font-family: var(--font-body) !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 600 !important;
+}
+.a-btn:hover {
+  background: rgba(244, 121, 32, 0.07) !important;
+  color: var(--orange) !important;
+  border-color: rgba(244, 121, 32, 0.12) !important;
+}
+[data-theme="dark"] .a-btn:hover {
+  background: rgba(244, 121, 32, 0.12) !important;
+  color: #f4a055 !important;
+  border-color: rgba(244, 121, 32, 0.22) !important;
+}
+.a-btn.active {
+  background: rgba(244, 121, 32, 0.1) !important;
+  color: var(--orange) !important;
+  border-color: rgba(244, 121, 32, 0.15) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(244, 121, 32, 0.06) !important;
+}
+.a-btn.active::before {
+  background: var(--orange) !important;
+  width: 3px !important;
+  border-radius: 2px !important;
+  height: 18px !important;
+}
+[data-theme="dark"] .a-btn.active {
+  background: rgba(244, 121, 32, 0.16) !important;
+  color: #f4a055 !important;
+  border-color: rgba(244, 121, 32, 0.25) !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .a-btn.active::before {
+  background: #f4a055 !important;
+}
+.a-btn.aside-danger {
+  color: var(--red) !important;
+}
+.a-btn.aside-danger:hover {
+  background: var(--rl) !important;
+  color: var(--red) !important;
+  border-color: rgba(192, 40, 40, 0.18) !important;
+}
+[data-theme="dark"] .a-btn.aside-danger:hover {
+  background: rgba(224, 85, 85, 0.15) !important;
+  color: #f07070 !important;
+  border-color: rgba(224, 85, 85, 0.26) !important;
+}
+
+/* ── 4. Stats Cards & Dashboard Polish ── */
+.stat {
+  border-radius: 16px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--sh-raise) !important;
+  transition: all var(--dur-base) var(--ease-out) !important;
+}
+.stat:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--sh-float) !important;
+}
+.stat::after {
+  transition: transform var(--dur-base) var(--ease-out) !important;
+}
+.stat:hover::after {
+  transform: scale(1.1) translate(-2px, -2px);
+}
+.stat:nth-child(2) {
+  border-top: 3px solid var(--forest) !important;
+}
+[data-theme="dark"] .stat:nth-child(2) {
+  border-top-color: #5ad08a !important;
+}
+.stat:nth-child(3) {
+  border-top: 3px solid var(--orange) !important;
+}
+.stat:nth-child(4) {
+  border-top: 3px solid var(--gold-d) !important;
+}
+[data-theme="dark"] .stat:nth-child(4) {
+  border-top-color: #e8bf28 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    END OF OVERHAUL
    ───────────────────────────────────────────────────────────────────────── */
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MOBILE — Phone-specific overrides (≤480px)
+   Desktop layout is completely untouched below this breakpoint boundary.
+   ═════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  /* ── NAV ── */
+  .top-nav {
+    height: 48px !important;
+    padding: 0 12px !important;
+  }
+  .nav-logo {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .nav-title {
+    font-size: 13px !important;
+  }
+  .nav-sub {
+    font-size: 10px !important;
+  }
+  .btn-ghost {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+  }
+  /* Hide theme toggle label on mobile to save space */
+  .nav-r .btn-ghost:first-child {
+    padding: 4px 6px !important;
+  }
+
+  /* ── ADMIN UTILITY STRIP ── */
+  .nav-utility-strip {
+    padding: 6px 12px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .nav-date-pill {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+  }
+  .nav-avail-pill {
+    font-size: 10px !important;
+  }
+
+  /* ── ADMIN LAYOUT — collapse sidebar to top tab bar on mobile ── */
+  .admin-body {
+    flex-direction: column !important;
+  }
+  .admin-aside {
+    width: 100% !important;
+    height: auto !important;
+    position: static !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    padding: 8px 10px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+  .aside-lbl {
+    display: none !important;
+  }
+  .a-btn {
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  .admin-main {
+    padding: 0 !important;
+  }
+  .pg-hd {
+    padding: 12px 14px 0 !important;
+  }
+  .pg-hd h1 {
+    font-size: 18px !important;
+  }
+
+  /* ── MODALS ── */
+  .modal-ov {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 18px 16px !important;
+    max-height: 88vh !important;
+    animation: slideUpMobile 0.25s var(--ease-out) both !important;
+  }
+  @keyframes slideUpMobile {
+    from { transform: translateY(100%); opacity: 0; }
+  }
+  .modal-hd h2 {
+    font-size: 15px !important;
+  }
+  /* Import modal overrides for mobile */
+  .import-split {
+    grid-template-columns: 1fr !important;
+  }
+  .import-split-list {
+    max-height: 220px !important;
+  }
+  .import-split-panel {
+    max-height: 300px !important;
+    position: static !important;
+  }
+
+  /* ── SCHEDULE TABLE ── */
+  .sched-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .sched-table {
+    min-width: 480px !important;
+  }
+
+  /* ── FACULTY LAYOUT ── */
+  .fac-main-grid {
+    grid-template-columns: 1fr !important;
+    padding: 0 10px 24px !important;
+    gap: 16px !important;
+  }
+  .fac-main-col-form {
+    position: static !important;
+  }
+  .req-section {
+    padding: 16px !important;
+  }
+  .req-section h2 {
+    font-size: 17px !important;
+  }
+
+  /* ── IMPORT PREVIEW ── */
+  .ir-field-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ir-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .ir-btn {
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  /* ── LANDING HERO ── */
+  .land-actions {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .land-actions .btn-primary,
+  .land-actions .btn-outline-green {
+    width: 100% !important;
+    text-align: center !important;
+  }
+  .hero-sched-card {
+    display: none !important; /* Hide floating schedule preview on very small screens */
+  }
+
+  /* ── VACANT ROOMS FILTER ── */
+  .vacant-filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .vacant-filter-group {
+    flex-wrap: wrap !important;
+  }
+
+  /* ── GENERAL SPACING ── */
+  .land-body {
+    padding: 24px 14px !important;
+  }
+  .land-body-section + .land-body-section {
+    margin-top: 16px !important;
+  }
+}

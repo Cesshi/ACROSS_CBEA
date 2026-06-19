@@ -1090,17 +1090,45 @@ function clearFacNewSlot() {
   facNewSlot = { day: null, time: null };
   hideEl("fac-new-slot-display");
 }
+
+// TO time input — user types the desired time range after picking a day
+function onFacToTimeInput() {
+  const val = document.getElementById("fac-to-time-input")?.value.trim();
+  if (!facToSlot.day) return; // day must be set via picker first
+  facToSlot.time = val || null;
+  // Update the display text
+  if (val) {
+    showEl(
+      "fac-to-display",
+      `${document.getElementById("fac-to-room")?.value || ""} · ${facToSlot.day} · ${val}`,
+    );
+  } else {
+    showEl(
+      "fac-to-display",
+      `${document.getElementById("fac-to-room")?.value || ""} · ${facToSlot.day} · (enter time below)`,
+    );
+  }
+  updateFacChangeSummary();
+}
+
 function clearFacFromSlot() {
   facFromSlot = { day: null, time: null };
   hideEl("fac-from-display");
+  const h = document.getElementById("fac-from-hint");
+  if (h) h.style.display = "";
   updateFacChangeSummary();
 }
 function clearFacToSlot() {
   facToSlot = { day: null, time: null };
   hideEl("fac-to-display");
+  const wrap = document.getElementById("fac-to-time-wrap");
+  if (wrap) wrap.style.display = "none";
+  const inp = document.getElementById("fac-to-time-input");
+  if (inp) inp.value = "";
+  const h = document.getElementById("fac-to-hint");
+  if (h) h.style.display = "";
   updateFacChangeSummary();
 }
-
 function hideEl(id) {
   const el = document.getElementById(id);
   if (el) el.style.display = "none";
@@ -1150,7 +1178,6 @@ async function submitFacRequest() {
   const name = document.getElementById("fac-name").value.trim();
   const subj = document.getElementById("fac-subj").value.trim();
   const group = document.getElementById("fac-group").value.trim();
-  const email = document.getElementById("fac-email").value.trim();
   const rtype = document.getElementById("fac-reqtype").value;
   const notes = document.getElementById("fac-notes").value.trim();
   showAlert("fac-conflict", false);
@@ -1177,15 +1204,21 @@ async function submitFacRequest() {
   } else {
     const fr = document.getElementById("fac-from-room").value;
     const tr = document.getElementById("fac-to-room").value;
-    if (!fr || !facFromSlot.day) {
+    if (!fr || !facFromSlot.day || !facFromSlot.time) {
       document.getElementById("fac-warn-msg").textContent =
-        "Please select your current room and slot.";
+        "Please select your current room and click your existing reservation on the calendar.";
       showAlert("fac-warn", true);
       return;
     }
     if (!tr || !facToSlot.day) {
       document.getElementById("fac-warn-msg").textContent =
-        "Please select your destination room and new slot.";
+        "Please select the destination room and click a vacant day on the calendar.";
+      showAlert("fac-warn", true);
+      return;
+    }
+    if (!facToSlot.time || !parseRange(facToSlot.time)) {
+      document.getElementById("fac-warn-msg").textContent =
+        "Please enter a valid requested time slot (e.g. 10:00-11:30) in the TO card.";
       showAlert("fac-warn", true);
       return;
     }
@@ -1196,11 +1229,31 @@ async function submitFacRequest() {
   }
 
   try {
+    // Client-side conflict pre-check so faculty sees the error immediately
+    // rather than waiting for the server round-trip.
+    const checkRoom =
+      rtype === "new"
+        ? room
+        : document.getElementById("fac-to-room")?.value || room;
+    const checkDay = rtype === "new" ? day : facToSlot.day;
+    const checkTime = rtype === "new" ? time : facToSlot.time;
+    const preConflict = bookings.find(
+      (b) =>
+        b.room === checkRoom &&
+        b.day === checkDay &&
+        normalizeTime(b.time) === normalizeTime(checkTime) &&
+        b.status === "approved",
+    );
+    if (preConflict) {
+      document.getElementById("fac-conflict-msg").textContent =
+        `${checkRoom} is already reserved on ${checkDay} at ${checkTime} by ${preConflict.prof} (${preConflict.subj}). Please choose a different room or time.`;
+      showAlert("fac-conflict", true);
+      return;
+    }
     await API.post("requests", {
       prof: name,
       subj,
       group,
-      email,
       room,
       day,
       time,
@@ -1210,7 +1263,12 @@ async function submitFacRequest() {
     ["fac-name", "fac-subj", "fac-group", "fac-notes"].forEach(
       (id) => (document.getElementById(id).value = ""),
     );
-    document.getElementById("fac-email").value = "";
+    const fromTimeInput = document.getElementById("fac-from-time-input");
+    const toTimeInput = document.getElementById("fac-to-time-input");
+    if (fromTimeInput) fromTimeInput.value = "";
+    if (toTimeInput) toTimeInput.value = "";
+    const toTimeWrap = document.getElementById("fac-to-time-wrap");
+    if (toTimeWrap) toTimeWrap.style.display = "none";
     document.getElementById("fac-room").selectedIndex = 0;
     document.getElementById("fac-reqtype").selectedIndex = 0;
     facNewSlot = { day: null, time: null };
@@ -1233,6 +1291,8 @@ async function submitFacRequest() {
 }
 
 // ── PICKER MODAL (shared for faculty & admin) ─────────────
+// Rebuilt to use rowspan-based rendering identical to the main calendar,
+// so reservation chips span their actual duration instead of per-30-min rows.
 function buildPickerTable(room, mode) {
   const hd = document.getElementById("picker-hd");
   const bd = document.getElementById("picker-bd");
@@ -1240,106 +1300,131 @@ function buildPickerTable(room, mode) {
     `<th class="rmc-time-th" style="width:75px;min-width:75px">Time</th>` +
     DAYS.map((d) => `<th>${d}</th>`).join("");
   bd.innerHTML = "";
-  TIMES.forEach((t) => {
+
+  const roomBks = bookings.filter(
+    (b) => b.room === room && b.status === "approved",
+  );
+  const conflicts = detectConflicts(roomBks);
+
+  // skip[slotIdx][dayIdx] = true means cell is covered by a rowspan above
+  const skip = {};
+
+  ALL_SLOTS.forEach((slot, si) => {
     const tr = document.createElement("tr");
+
+    // Time label
     const tc = document.createElement("td");
     tc.className = "rmc-time";
-    tc.textContent = t;
+    tc.textContent = slot.label;
     tr.appendChild(tc);
-    DAYS.forEach((d) => {
-      const roomBks = bookings.filter(
-        (b) =>
-          b.room === room &&
-          matchesDay(b.day, d) &&
-          timesOverlap(b.time, t) &&
-          b.status === "approved",
-      );
+
+    DAYS.forEach((d, di) => {
+      if (skip[si] && skip[si][di]) return; // covered by rowspan
+
+      // Find a booking that starts at or before this slot and covers it
+      const bk = roomBks.find((b) => {
+        if (!matchesDay(b.day, d)) return false;
+        const r = parseRange(b.time);
+        return r && r.start <= slot.min && slot.min < r.end;
+      });
+
       const td = document.createElement("td");
-      td.style.cssText = "padding:2px;vertical-align:top;height:44px";
-      if (roomBks.length > 0) {
-        const inner = document.createElement("div");
-        inner.style.cssText =
-          "display:flex;flex-direction:column;gap:2px;height:100%";
-        roomBks.slice(0, MAX_VISIBLE).forEach((bk, i) => {
-          const c = getColor(i);
+      td.style.cssText = "padding:0;vertical-align:top;";
+
+      if (bk) {
+        const r = parseRange(bk.time);
+        const span = slotRowSpan(r.start, r.end);
+
+        // Only render on the first slot of this booking
+        if (Math.floor((r.start - SLOT_START) / SLOT_SIZE) === si) {
+          td.rowSpan = span;
+
+          // Mark subsequent slots as skipped
+          for (let s = si + 1; s < si + span; s++) {
+            if (!skip[s]) skip[s] = {};
+            skip[s][di] = true;
+          }
+
+          const inner = document.createElement("div");
+          inner.style.cssText =
+            "height:100%;min-height:" +
+            span * 44 +
+            "px;display:flex;flex-direction:column;";
+          const isConflict = conflicts.has(bk.id);
+          const c = getColor(0);
+
           const chip = document.createElement("div");
-          chip.style.cssText = `background:${c.bg};border-left:2px solid ${c.border};color:${c.text};border-radius:4px;padding:2px 5px;font-size:9px;line-height:1.3;flex:1;min-height:0;overflow:hidden`;
-          chip.innerHTML = `<div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bk.subj}</div><div style="opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bk.group || bk.prof}</div>`;
-          chip.addEventListener("mouseenter", (e) => showTip(e, bk));
-          chip.addEventListener("mouseleave", hideTip);
+          chip.style.cssText = `background:${c.bg};border-left:3px solid ${c.border};color:${c.text};border-radius:4px;padding:4px 6px;font-size:10px;line-height:1.3;flex:1;overflow:hidden;${mode === "from" ? "cursor:pointer;" : "cursor:not-allowed;"}`;
+          chip.innerHTML = `<div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bk.subj}</div><div style="opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bk.group || bk.prof}</div><div style="font-size:9px;opacity:.65;margin-top:1px">${bk.time}</div>`;
+
           if (mode === "from") {
-            const isSel =
-              facFromSlot.day === d &&
-              normalizeTime(facFromSlot.time) === normalizeTime(t);
-            chip.style.cursor = "pointer";
-            chip.style.outline = isSel ? `2px solid ${c.border}` : "none";
+            const isSel = facFromSlot.day === d && facFromSlot.time === bk.time;
             if (isSel) {
-              const tick = document.createElement("div");
-              tick.style.cssText =
-                "font-size:8px;font-weight:700;margin-top:1px";
-              tick.textContent = "✓ Selected";
-              chip.appendChild(tick);
+              chip.style.outline = `2px solid ${c.border}`;
+              chip.innerHTML += `<div style="font-size:9px;font-weight:700;margin-top:2px">✓ Selected</div>`;
             }
             chip.addEventListener("click", () => {
-              facFromSlot = { day: d, time: t };
+              // Auto-fill the exact booking time range — no manual input needed
+              facFromSlot = { day: d, time: bk.time };
               closeModal("sched-picker-modal");
-              showEl(
-                "fac-from-display",
-                `${document.getElementById("fac-from-room").value} · ${d} · ${t}`,
-              );
+              showEl("fac-from-display", `${room} · ${d} · ${bk.time}`);
+              hideEl("fac-from-hint");
               updateFacChangeSummary();
+              buildPickerTable(room, mode); // refresh selection highlight
             });
           }
+
           inner.appendChild(chip);
-        });
-        td.appendChild(inner);
+          td.appendChild(inner);
+        } else {
+          return; // skip — covered by a rowspan but somehow not in skip map
+        }
       } else {
-        if (mode === "new" || mode === "to") {
+        // Vacant slot
+        td.style.height = "44px";
+        if (mode === "to") {
           const isSel =
-            (mode === "new" &&
-              facNewSlot.day === d &&
-              normalizeTime(facNewSlot.time) === normalizeTime(t)) ||
-            (mode === "to" &&
-              facToSlot.day === d &&
-              normalizeTime(facToSlot.time) === normalizeTime(t));
-          td.style.cursor = "pointer";
-          td.style.background = isSel ? "var(--green)" : "";
-          td.addEventListener("mouseenter", () => {
-            if (!isSel) td.style.background = "var(--al)";
-          });
-          td.addEventListener("mouseleave", () => {
-            if (!isSel) td.style.background = "";
-          });
-          if (isSel) {
-            const tick = document.createElement("div");
-            tick.style.cssText =
-              "color:#fff;font-size:9px;font-weight:700;text-align:center;padding-top:4px";
-            tick.textContent = "✓";
-            td.appendChild(tick);
-          }
-          td.addEventListener("click", () => {
-            if (mode === "new") {
-              facNewSlot = { day: d, time: t };
-              closeModal("sched-picker-modal");
-              showEl(
-                "fac-new-slot-display",
-                `${document.getElementById("fac-room").value} · ${d} · ${t}`,
-              );
-              showAlert("fac-room-info", false);
-            } else {
-              facToSlot = { day: d, time: t };
-              closeModal("sched-picker-modal");
-              showEl(
-                "fac-to-display",
-                `${document.getElementById("fac-to-room").value} · ${d} · ${t}`,
-              );
-              updateFacChangeSummary();
+            facToSlot.day === d &&
+            slotRowIndex(slot.min) ===
+              slotRowIndex(timeToMin(facToSlot.startTime || ""));
+          const inner = document.createElement("div");
+          inner.className = `rmc-cell-vacant${isSel ? " selected" : ""}`;
+          inner.textContent = isSel ? "✓" : "";
+          inner.addEventListener("click", () => {
+            facToSlot = { day: d, time: null };
+            // Show the time input in the TO card and focus it
+            const wrap = document.getElementById("fac-to-time-wrap");
+            if (wrap) wrap.style.display = "";
+            const inp = document.getElementById("fac-to-time-input");
+            if (inp) {
+              inp.value = "";
+              inp.focus();
             }
+            closeModal("sched-picker-modal");
+            showEl("fac-to-display", `${room} · ${d} · (enter time below)`);
+            hideEl("fac-to-hint");
+            updateFacChangeSummary();
           });
+          td.appendChild(inner);
+        } else if (mode === "new") {
+          const inner = document.createElement("div");
+          inner.className = "rmc-cell-vacant";
+          inner.textContent = "";
+          inner.addEventListener("click", () => {
+            facNewSlot = { day: d, time: slot.label };
+            closeModal("sched-picker-modal");
+            showEl(
+              "fac-new-slot-display",
+              `${room} · ${d} · from ${slot.label}`,
+            );
+            showAlert("fac-room-info", false);
+          });
+          td.appendChild(inner);
         }
       }
       tr.appendChild(td);
     });
+
     bd.appendChild(tr);
   });
 }
@@ -1418,10 +1503,12 @@ function renderDashboard() {
     ? pending
         .map(
           (b) =>
-            `<tr><td>${b.prof}</td><td>${b.subj}</td><td>${b.room}</td><td>${b.day} · ${b.time}</td><td><span class="tag amber">pending</span></td><td><div class="acts"><button class="btn-a ok" onclick="approveB(${b.id})">Approve</button><button class="btn-a rej" onclick="rejectB(${b.id})">Reject</button></div></td></tr>`,
+            `<tr><td>${b.prof}</td><td>${b.subj}</td><td>${b.room}</td><td>${b.day} · ${b.time}</td>
+            <td style="max-width:180px;font-size:12px;color:var(--t2)">${b.notes ? `<span title="${b.notes.replace(/"/g, "&quot;")}">${b.notes.length > 60 ? b.notes.slice(0, 60) + "…" : b.notes}</span>` : "<span style='color:var(--t3)'>—</span>"}</td>
+            <td><span class="tag amber">pending</span></td><td><div class="acts"><button class="btn-a ok" onclick="approveB(${b.id})">Approve</button><button class="btn-a rej" onclick="rejectB(${b.id})">Reject</button></div></td></tr>`,
         )
         .join("")
-    : `<tr><td colspan="6" class="empty">No pending requests.</td></tr>`;
+    : `<tr><td colspan="7" class="empty">No pending requests.</td></tr>`;
 
   // Conflicts section
   const conflictEl = document.getElementById("dash-conflicts");
@@ -1601,7 +1688,7 @@ function renderReqTbl() {
           (b) => `<tr>
     <td>${hl(b.prof)}</td><td>${hl(b.subj)}</td><td>${hl(b.group || "—")}</td><td>${hl(b.room)}</td>
     <td>${hl(b.day)} · ${b.time}</td>
-    <td>${b.notes ? `<button class="btn-a view-notes" onclick="viewNotes(${b.id})" style="font-size:11px">View Notes</button>` : `<span style="font-size:11px;color:var(--t3)">No Notes</span>`}</td>
+    <td style="max-width:200px;font-size:12px;color:var(--t2)">${b.notes ? `<span title="${b.notes.replace(/"/g, "&quot;")}">${b.notes.length > 70 ? b.notes.slice(0, 70) + "…" : b.notes}</span>${b.notes.length > 70 ? ` <button class="btn-a view-notes" onclick="viewNotes(${b.id})" style="font-size:10px;margin-top:2px">More</button>` : ""}` : `<span style="color:var(--t3)">—</span>`}</td>
     <td><span class="tag ${b.status === "approved" ? "green" : b.status === "pending" ? "amber" : "red"}">${b.status}</span></td>
     <td style="font-size:11px;color:var(--t3)">${fmtDate(b.actionAt)}</td>
     <td><div class="acts">${b.status === "pending" ? `<button class="btn-a ok" onclick="approveB(${b.id})">Approve</button><button class="btn-a rej" onclick="rejectB(${b.id})">Reject</button>` : ""}</div></td>
@@ -1792,6 +1879,24 @@ async function saveBooking() {
     toast("Please fill all required fields.");
     return;
   }
+  // Block save if a conflict is detected
+  const conflict = bookings.find(
+    (b) =>
+      b.room === room &&
+      b.day === day &&
+      normalizeTime(b.time) === normalizeTime(time) &&
+      b.status === "approved" &&
+      b.id !== editBookingId,
+  );
+  if (conflict) {
+    const el = document.getElementById("bk-conflict");
+    const msg = document.getElementById("bk-conflict-msg");
+    if (el) el.style.display = "flex";
+    if (msg)
+      msg.textContent = `${room} is already reserved on ${day} at ${time} by ${conflict.prof} (${conflict.subj}). Resolve the conflict first.`;
+    toast(`🚫 Schedule conflict — ${room} is already booked at that time.`);
+    return;
+  }
   try {
     const payload = { prof, subj, group, room, day, time, status: "approved" };
     if (editBookingId) {
@@ -1972,17 +2077,32 @@ function showImportPreview(aiUsed) {
   document.getElementById("import-counts").textContent =
     `✅ ${valid.length} ready · ⚠️ ${flagged.length} flagged · 🔴 ${conflict.length} conflicts`;
 
-  // Check conflicts against current bookings
-  importRows.forEach((r) => {
+  // Check conflicts against current bookings AND within the batch itself
+  importRows.forEach((r, i) => {
     if (r.flagged) return;
-    const c = bookings.find(
+    // Against existing approved bookings in the database
+    const dbConflict = bookings.find(
       (b) =>
         b.room === r.room &&
         b.day === r.day &&
         normalizeTime(b.time) === normalizeTime(r.time) &&
         b.status === "approved",
     );
-    r.conflict = !!c;
+    if (dbConflict) {
+      r.conflict = true;
+      return;
+    }
+    // Against other rows in the same import batch (earlier rows take priority)
+    const batchConflict = importRows.findIndex(
+      (other, j) =>
+        j !== i &&
+        !other.flagged &&
+        other.room === r.room &&
+        other.day === r.day &&
+        normalizeTime(other.time) === normalizeTime(r.time) &&
+        j < i, // earlier row wins; mark the later one as conflict
+    );
+    r.conflict = batchConflict !== -1;
   });
 
   renderImportList();
