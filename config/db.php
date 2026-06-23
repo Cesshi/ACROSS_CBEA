@@ -1,8 +1,4 @@
 <?php
-// ============================================
-// Database Configuration — ACROSS CBEA
-// config/db.php
-// ============================================
 
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
@@ -24,5 +20,5 @@ function getConnection() {
     return $conn;
 }
 
-// Python executable path — update this per machine
+// Optional: Define the path to the Python executable if needed for any Python scripts
 define('PYTHON_PATH', 'C:\\msys64\\ucrt64\\bin\\python.exe');

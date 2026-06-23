@@ -1,11 +1,6 @@
 <?php
 ini_set("display_errors", 0);
 error_reporting(0);
-// ============================================
-// Requests — public submit + admin manage
-// api/requests.php
-// ============================================
-
 session_start();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

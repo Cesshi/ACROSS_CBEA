@@ -1,8 +1,4 @@
 <?php
-// ============================================
-// Get All Bookings
-// api/get_bookings.php
-// ============================================
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

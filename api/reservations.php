@@ -2,10 +2,6 @@
 ini_set('display_errors', 0);
 error_reporting(0);
 ob_start(); // buffer output to prevent partial responses
-// ============================================
-// Reservations CRUD
-// api/reservations.php
-// ============================================
 
 session_start();
 header('Content-Type: application/json');

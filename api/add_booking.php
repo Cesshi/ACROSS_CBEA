@@ -1,8 +1,4 @@
 <?php
-// ============================================
-// Add Booking (Admin only)
-// api/add_booking.php
-// ============================================
 
 session_start();
 header('Content-Type: application/json');

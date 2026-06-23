@@ -1,8 +1,4 @@
 <?php
-// ============================================
-// Delete Booking (Admin only)
-// api/delete_booking.php
-// ============================================
 
 session_start();
 header('Content-Type: application/json');

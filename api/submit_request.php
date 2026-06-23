@@ -1,7 +1,4 @@
 <?php
-// ============================================
-// Submit Room Request
-// ============================================
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

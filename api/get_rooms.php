@@ -1,8 +1,4 @@
 <?php
-// ============================================
-// Get All Rooms
-// api/get_rooms.php
-// ============================================
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

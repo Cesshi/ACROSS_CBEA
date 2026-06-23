@@ -1,8 +1,4 @@
 <?php
-// ============================================
-// Update Booking (Admin only)
-// api/update_booking.php
-// ============================================
 
 session_start();
 header('Content-Type: application/json');

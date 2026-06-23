@@ -1,8 +1,4 @@
 <?php
-// ============================================
-// Approve or Reject Request (Admin only)
-// api/handle_request.php
-// ============================================
 
 session_start();
 header('Content-Type: application/json');
