@@ -1,10 +1,5 @@
--- ============================================================
--- ACROSS CBEA – Database Schema
--- Run this on a fresh database OR run the migration section
--- ============================================================
-
--- CREATE DATABASE IF NOT EXISTS across_cbea CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE across_cbea;
+CREATE DATABASE IF NOT EXISTS across_cbea CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE across_cbea;
 
 -- ── USERS (replaces admin_users) ───────────────────────────
 CREATE TABLE IF NOT EXISTS users (
