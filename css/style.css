@@ -7448,14 +7448,18 @@ a:focus-visible {
    LAYOUT — fixed header + sidebar + scrollable main
    ───────────────────────────────────────────────────────────────────────── */
 
+/* #screen-admin respects .screen { display: none } from the global base.
+   We only override display when .active is applied by JS.               */
 #screen-admin {
-  display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
   background: #f5f6f8;
   font-family: "Plus Jakarta Sans", "Inter", sans-serif;
   color: rgba(18, 18, 24, 0.9);
+}
+#screen-admin.active {
+  display: flex !important;
 }
 
 [data-theme="dark"] #screen-admin {
@@ -9151,4 +9155,284 @@ a:focus-visible {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    END OF ADMIN OVERHAUL CSS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TARGETED FIXES — v2 patch
+   1. Theme transition — smooth and complete across all elements
+   2. Table header — forest-green gradient matching homepage/faculty
+   3. Typography — correct weight hierarchy throughout admin
+   4. Sidebar — only the ACTIVE nav item is highlighted, rest are ghost
+   5. Admin layout bleed — gated behind .active (done in CSS above)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── FIX: Theme transition — smooth 300ms across every visual property ── */
+html,
+html *,
+html *::before,
+html *::after {
+  transition:
+    background-color 300ms ease,
+    background 300ms ease,
+    border-color 300ms ease,
+    color 300ms ease,
+    box-shadow 300ms ease,
+    fill 300ms ease,
+    stroke 300ms ease;
+}
+
+/* Prevent transition fighting on elements that animate for function */
+html .adm-donut-fill--green,
+html .adm-donut-fill--orange,
+html .adm-widget-badge::before,
+html input,
+html textarea,
+html select,
+html .slot-chip,
+html .hero-sched-row,
+html .v-room,
+html .land-strip-item,
+html .land-body-section {
+  transition: none;
+}
+
+/* Re-apply only theme transitions to inputs/selects (but not animation ones) */
+html input,
+html textarea,
+html select {
+  transition:
+    background-color 300ms ease,
+    border-color 300ms ease,
+    color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+/* ── FIX: btn-ghost--icon — minimal icon-only ghost button ── */
+.btn-ghost--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 0 8px;
+}
+
+/* ── FIX: Admin table headers — forest-green gradient matching homepage/faculty ──
+   The .adm-table class + .data class are both present on admin tables.
+   Override the adm-table th scoped rule so it inherits the .data global rule.    */
+#screen-admin .adm-table thead tr,
+#screen-admin table.data thead tr {
+  background: linear-gradient(90deg, #1a5c2a 0%, #1e6a30 100%) !important;
+}
+
+#screen-admin .adm-table th,
+#screen-admin table.data th {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.55px !important;
+  text-transform: uppercase !important;
+  padding: 11px 14px !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12) !important;
+  white-space: nowrap !important;
+}
+
+/* Subtle column dividers in header */
+#screen-admin .adm-table th:not(:last-child),
+#screen-admin table.data th:not(:last-child) {
+  position: relative;
+}
+#screen-admin .adm-table th:not(:last-child)::after,
+#screen-admin table.data th:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 25%;
+  height: 50%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Dark mode table header */
+[data-theme="dark"] #screen-admin .adm-table thead tr,
+[data-theme="dark"] #screen-admin table.data thead tr {
+  background: linear-gradient(90deg, hsl(155, 40%, 16%) 0%, hsl(155, 38%, 18%) 100%) !important;
+}
+
+[data-theme="dark"] #screen-admin .adm-table th,
+[data-theme="dark"] #screen-admin table.data th {
+  color: rgba(200, 230, 210, 0.9) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── FIX: Typography hierarchy — correct weights throughout admin ──
+   Page titles: 700 (bold but not 800 which was too heavy)
+   Card headers: 600 (semibold)
+   Labels/body: 400–500                                              */
+#screen-admin .adm-pg-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+#screen-admin .adm-pg-sub {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+#screen-admin .adm-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+#screen-admin .adm-widget-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+#screen-admin .adm-metric-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+#screen-admin .adm-metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+#screen-admin .adm-nav-btn {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#screen-admin .adm-nav-btn.active {
+  font-weight: 600;
+}
+
+#screen-admin .adm-nav-section-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+#screen-admin .adm-tab {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#screen-admin .adm-tab.active {
+  font-weight: 600;
+}
+
+/* ── FIX: Sidebar — ONLY highlighted button is the active one ──
+   Ensure NO non-active buttons have green background or green text.
+   Be explicit: default state is completely neutral.                 */
+
+/* Reset ALL nav buttons to neutral ghost state */
+#screen-admin .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):not(:hover) {
+  background: transparent !important;
+  color: rgba(18, 18, 24, 0.58) !important;
+}
+
+[data-theme="dark"] #screen-admin .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):not(:hover) {
+  background: transparent !important;
+  color: rgba(232, 232, 240, 0.5) !important;
+}
+
+/* Active: green pill background + left border accent ONLY */
+#screen-admin .adm-nav-btn.active {
+  background: var(--forest-l) !important;
+  color: var(--forest) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] #screen-admin .adm-nav-btn.active {
+  background: rgba(26, 92, 42, 0.22) !important;
+  color: #6dcf8a !important;
+}
+
+/* Active border-left accent */
+#screen-admin .adm-nav-btn.active::before {
+  opacity: 1;
+  background: var(--forest);
+}
+
+[data-theme="dark"] #screen-admin .adm-nav-btn.active::before {
+  background: #6dcf8a;
+}
+
+/* Non-active left border stays invisible */
+#screen-admin .adm-nav-btn:not(.active)::before {
+  opacity: 0;
+}
+
+/* Hover: subtle green tint — but not as strong as active */
+#screen-admin .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):hover {
+  background: rgba(26, 92, 42, 0.05) !important;
+  color: rgba(18, 18, 24, 0.85) !important;
+}
+
+[data-theme="dark"] #screen-admin .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(232, 232, 240, 0.88) !important;
+}
+
+/* Danger buttons — always neutral-red, never green */
+#screen-admin .adm-nav-btn--danger:not(:hover) {
+  background: transparent !important;
+  color: rgba(192, 40, 40, 0.65) !important;
+}
+
+#screen-admin .adm-nav-btn--danger:hover {
+  background: rgba(192, 40, 40, 0.07) !important;
+  color: #c02828 !important;
+}
+
+[data-theme="dark"] #screen-admin .adm-nav-btn--danger:not(:hover) {
+  color: rgba(224, 85, 85, 0.6) !important;
+}
+
+[data-theme="dark"] #screen-admin .adm-nav-btn--danger:hover {
+  background: rgba(224, 85, 85, 0.1) !important;
+  color: #e07070 !important;
+}
+
+/* ── FIX: Admin donut fills — don't inherit global theme transitions ── */
+#screen-admin .adm-donut-fill--green,
+#screen-admin .adm-donut-fill--orange {
+  transition:
+    stroke-dasharray 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    stroke-dashoffset 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── FIX: Admin card hover — don't fight theme transition ── */
+#screen-admin .adm-metric-card,
+#screen-admin .adm-card,
+#screen-admin .adm-nav-btn,
+#screen-admin .adm-quick-btn,
+#screen-admin .adm-icon-btn,
+#screen-admin .adm-logout-btn,
+#screen-admin .adm-add-btn,
+#screen-admin .adm-tab,
+#screen-admin .adm-view-btn,
+#screen-admin .adm-search-input {
+  transition:
+    background-color 300ms ease,
+    background 300ms ease,
+    border-color 200ms ease-out,
+    color 300ms ease,
+    box-shadow 200ms ease-out,
+    transform 80ms ease-out,
+    opacity 200ms ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   END FIXES v2
    ═══════════════════════════════════════════════════════════════════════════ */

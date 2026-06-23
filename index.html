@@ -608,7 +608,9 @@
           <span class="nav-sub">CBEA</span>
         </div>
         <div class="nav-r">
-          <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
+          <button class="btn-ghost btn-ghost--icon" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle light/dark theme">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
           <button class="btn-primary" onclick="goScreen('login')">Login</button>
         </div>
       </nav>
@@ -1019,13 +1021,15 @@
           <span class="nav-sub">Faculty</span>
         </div>
         <div class="nav-r">
-          <button class="btn-ghost" onclick="toggleTheme()">☀/☾</button>
+          <button class="btn-ghost btn-ghost--icon" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle light/dark theme">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
           <button
             class="btn-ghost"
             id="fac-view-toggle"
             onclick="toggleFacultyView()"
           >
-            ⊞ Grid View
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Grid View
           </button>
           <button class="btn-ghost" onclick="doLogout()">Logout</button>
         </div>
@@ -1122,10 +1126,11 @@
                   id="fac-new-slot-display"
                   style="display: none"
                 >
-                  <span class="slot-display-icon">📍</span>
+                  <span class="slot-display-icon" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
                   <span id="fac-new-slot-text"></span>
                   <button
                     onclick="clearFacNewSlot()"
+                    aria-label="Clear selected slot"
                     style="
                       background: none;
                       border: none;
@@ -1133,9 +1138,11 @@
                       cursor: pointer;
                       font-size: 12px;
                       margin-left: auto;
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 4px;
                     "
-                  >
-                    ✕ Clear
+                  ><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Clear
                   </button>
                 </div>
                 <div
@@ -1143,7 +1150,7 @@
                   id="fac-room-info"
                   style="margin-top: 8px"
                 >
-                  <span class="alert-icon">ℹ️</span
+                  <span class="alert-icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span
                   ><span
                     >Select a room to view its schedule and pick a slot.</span
                   >
@@ -1171,10 +1178,11 @@
                       id="fac-from-display"
                       style="display: none"
                     >
-                      <span class="slot-display-icon">📍</span
+                      <span class="slot-display-icon" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span
                       ><span id="fac-from-text"></span>
                       <button
                         onclick="clearFacFromSlot()"
+                        aria-label="Clear from slot"
                         style="
                           background: none;
                           border: none;
@@ -1182,9 +1190,10 @@
                           cursor: pointer;
                           font-size: 12px;
                           margin-left: auto;
+                          display: inline-flex;
+                          align-items: center;
                         "
-                      >
-                        ✕
+                      ><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>
                     </div>
                     <div
@@ -1218,10 +1227,11 @@
                       id="fac-to-display"
                       style="display: none"
                     >
-                      <span class="slot-display-icon">📍</span
+                      <span class="slot-display-icon" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span
                       ><span id="fac-to-text"></span>
                       <button
                         onclick="clearFacToSlot()"
+                        aria-label="Clear to slot"
                         style="
                           background: none;
                           border: none;
@@ -1229,9 +1239,10 @@
                           cursor: pointer;
                           font-size: 12px;
                           margin-left: auto;
+                          display: inline-flex;
+                          align-items: center;
                         "
-                      >
-                        ✕
+                      ><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>
                     </div>
                     <div
@@ -1276,11 +1287,11 @@
               id="fac-conflict"
               style="margin-top: 12px"
             >
-              <span class="alert-icon">🚫</span
+              <span class="alert-icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span
               ><span id="fac-conflict-msg"></span>
             </div>
             <div class="alert caution" id="fac-warn" style="margin-top: 12px">
-              <span class="alert-icon">⚠️</span><span id="fac-warn-msg"></span>
+              <span class="alert-icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span id="fac-warn-msg"></span>
             </div>
             <div style="margin-top: 16px">
               <button class="btn-save" onclick="submitFacRequest()">
@@ -2100,5 +2111,60 @@
       })();
     </script>
     <script src="js/main.js" defer></script>
+
+    <!-- ── ADMIN NAV BRIDGE ──
+         main.js's showAdminPg() targets .a-btn (old class).
+         This bridge patches it to also handle .adm-nav-btn (new class),
+         ensuring active states work correctly without touching main.js.
+    ── -->
+    <script>
+      (function () {
+        /* Wait for main.js to be ready, then patch showAdminPg */
+        function patchShowAdminPg() {
+          if (typeof window.showAdminPg !== "function") return;
+          var _orig = window.showAdminPg;
+          window.showAdminPg = function (pg, btn) {
+            /* 1. Run original logic (handles .pg visibility, .a-btn active etc.) */
+            _orig.call(this, pg, btn);
+            /* 2. Also update .adm-nav-btn active states */
+            var adminEl = document.getElementById("screen-admin");
+            if (!adminEl) return;
+            adminEl.querySelectorAll(".adm-nav-btn[data-pg]").forEach(function (b) {
+              var isActive = b.dataset.pg === pg;
+              b.classList.toggle("active", isActive);
+              b.setAttribute("aria-current", isActive ? "page" : "false");
+            });
+          };
+        }
+
+        /* If main.js is already loaded, patch now; otherwise wait */
+        if (document.readyState === "complete") {
+          patchShowAdminPg();
+        } else {
+          window.addEventListener("load", patchShowAdminPg);
+        }
+
+        /* Fallback: also define showAdminPg ourselves if main.js never defines it
+           (handles edge cases where main.js fails to load) */
+        window.addEventListener("load", function () {
+          if (typeof window.showAdminPg !== "function") {
+            window.showAdminPg = function (pg, btn) {
+              var adminEl = document.getElementById("screen-admin");
+              if (!adminEl) return;
+              /* Show correct .pg panel */
+              adminEl.querySelectorAll(".pg").forEach(function (p) {
+                p.classList.toggle("active", p.id === "apg-" + pg);
+              });
+              /* Update sidebar active state */
+              adminEl.querySelectorAll(".adm-nav-btn[data-pg]").forEach(function (b) {
+                var isActive = b.dataset.pg === pg;
+                b.classList.toggle("active", isActive);
+                b.setAttribute("aria-current", isActive ? "page" : "false");
+              });
+            };
+          }
+        });
+      })();
+    </script>
   </body>
 </html>
