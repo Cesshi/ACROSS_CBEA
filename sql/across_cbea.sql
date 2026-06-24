@@ -79,15 +79,15 @@ INSERT IGNORE INTO rooms (name, type, `cap`, floor) VALUES
 
 -- Step 1: Migrate admin_users → users
 INSERT IGNORE INTO users (username, password_hash, role)
-  SELECT username, password_hash, 'admin' FROM admin_users WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='admin_users' AND table_schema=DATABASE());
+--   SELECT username, password_hash, 'admin' FROM admin_users WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='admin_users' AND table_schema=DATABASE());
 
 -- Step 2: Migrate day values Mon→M, Tue→T, Wed→W, Thu→TH, Fri→F, Sat→SAT
-UPDATE reservations SET day='M'   WHERE day='Mon';
-UPDATE reservations SET day='T'   WHERE day='Tue';
-UPDATE reservations SET day='W'   WHERE day='Wed';
-UPDATE reservations SET day='TH'  WHERE day='Thu';
-UPDATE reservations SET day='F'   WHERE day='Fri';
-UPDATE reservations SET day='SAT' WHERE day='Sat';
+-- UPDATE reservations SET day='M'   WHERE day='Mon';
+-- UPDATE reservations SET day='T'   WHERE day='Tue';
+-- UPDATE reservations SET day='W'   WHERE day='Wed';
+-- UPDATE reservations SET day='TH'  WHERE day='Thu';
+-- UPDATE reservations SET day='F'   WHERE day='Fri';
+-- UPDATE reservations SET day='SAT' WHERE day='Sat';
 
 -- Step 3: Drop old admin_users if it exists (optional — comment out if unsure)
 -- DROP TABLE IF EXISTS admin_users;
