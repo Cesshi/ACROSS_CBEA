@@ -1490,7 +1490,7 @@ table.data tbody tr:hover td {
 }
 .land-hero h1 .accent-word {
   color: #f47920;
-  font-style: italic;
+  font-style: normal;
 }
 
 /* Hero tagline */
@@ -5240,7 +5240,7 @@ h3 {
 }
 .land-hero h1 .accent-word {
   color: var(--orange) !important;
-  font-style: italic !important;
+  font-style: normal !important;
   text-shadow: 0 0 40px rgba(244, 121, 32, 0.35) !important;
 }
 
@@ -8678,8 +8678,15 @@ a:focus-visible {
 }
 
 @keyframes adm-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -8794,12 +8801,22 @@ a:focus-visible {
   flex-shrink: 0;
 }
 
-#screen-admin .adm-donut-legend-dot--green   { background: var(--forest); }
-#screen-admin .adm-donut-legend-dot--orange  { background: var(--orange); }
-#screen-admin .adm-donut-legend-dot--vacant  { background: rgba(0,0,0,0.12); }
+#screen-admin .adm-donut-legend-dot--green {
+  background: var(--forest);
+}
+#screen-admin .adm-donut-legend-dot--orange {
+  background: var(--orange);
+}
+#screen-admin .adm-donut-legend-dot--vacant {
+  background: rgba(0, 0, 0, 0.12);
+}
 
-[data-theme="dark"] #screen-admin .adm-donut-legend-dot--green  { background: #6dcf8a; }
-[data-theme="dark"] #screen-admin .adm-donut-legend-dot--vacant { background: rgba(255,255,255,0.15); }
+[data-theme="dark"] #screen-admin .adm-donut-legend-dot--green {
+  background: #6dcf8a;
+}
+[data-theme="dark"] #screen-admin .adm-donut-legend-dot--vacant {
+  background: rgba(255, 255, 255, 0.15);
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    QUICK ACTIONS
@@ -8867,15 +8884,38 @@ a:focus-visible {
   flex-shrink: 0;
 }
 
-#screen-admin .adm-quick-icon--green  { background: var(--forest-l);  color: var(--forest); }
-#screen-admin .adm-quick-icon--orange { background: var(--orange-l);  color: var(--orange); }
-#screen-admin .adm-quick-icon--accent { background: rgba(26, 92, 42, 0.1); color: var(--forest); }
-#screen-admin .adm-quick-icon--gold   { background: rgba(245, 197, 24, 0.14); color: var(--gold-d, #c9960a); }
+#screen-admin .adm-quick-icon--green {
+  background: var(--forest-l);
+  color: var(--forest);
+}
+#screen-admin .adm-quick-icon--orange {
+  background: var(--orange-l);
+  color: var(--orange);
+}
+#screen-admin .adm-quick-icon--accent {
+  background: rgba(26, 92, 42, 0.1);
+  color: var(--forest);
+}
+#screen-admin .adm-quick-icon--gold {
+  background: rgba(245, 197, 24, 0.14);
+  color: var(--gold-d, #c9960a);
+}
 
-[data-theme="dark"] #screen-admin .adm-quick-icon--green  { background: rgba(26,92,42,0.22); color: #6dcf8a; }
-[data-theme="dark"] #screen-admin .adm-quick-icon--orange { background: rgba(244,121,32,0.15); }
-[data-theme="dark"] #screen-admin .adm-quick-icon--accent { background: rgba(26,92,42,0.18); color: #6dcf8a; }
-[data-theme="dark"] #screen-admin .adm-quick-icon--gold   { background: rgba(245,197,24,0.12); color: var(--gold); }
+[data-theme="dark"] #screen-admin .adm-quick-icon--green {
+  background: rgba(26, 92, 42, 0.22);
+  color: #6dcf8a;
+}
+[data-theme="dark"] #screen-admin .adm-quick-icon--orange {
+  background: rgba(244, 121, 32, 0.15);
+}
+[data-theme="dark"] #screen-admin .adm-quick-icon--accent {
+  background: rgba(26, 92, 42, 0.18);
+  color: #6dcf8a;
+}
+[data-theme="dark"] #screen-admin .adm-quick-icon--gold {
+  background: rgba(245, 197, 24, 0.12);
+  color: var(--gold);
+}
 
 #screen-admin .adm-quick-lbl {
   flex: 1 1 0;
@@ -8884,7 +8924,9 @@ a:focus-visible {
 #screen-admin .adm-quick-arrow {
   color: rgba(18, 18, 24, 0.25);
   flex-shrink: 0;
-  transition: color var(--dur-fast) ease-out, transform var(--dur-fast) ease-out;
+  transition:
+    color var(--dur-fast) ease-out,
+    transform var(--dur-fast) ease-out;
 }
 
 #screen-admin .adm-quick-btn:hover .adm-quick-arrow {
@@ -9256,7 +9298,11 @@ html select {
 /* Dark mode table header */
 [data-theme="dark"] #screen-admin .adm-table thead tr,
 [data-theme="dark"] #screen-admin table.data thead tr {
-  background: linear-gradient(90deg, hsl(155, 40%, 16%) 0%, hsl(155, 38%, 18%) 100%) !important;
+  background: linear-gradient(
+    90deg,
+    hsl(155, 40%, 16%) 0%,
+    hsl(155, 38%, 18%) 100%
+  ) !important;
 }
 
 [data-theme="dark"] #screen-admin .adm-table th,
@@ -9341,7 +9387,9 @@ html select {
   color: rgba(18, 18, 24, 0.58) !important;
 }
 
-[data-theme="dark"] #screen-admin .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):not(:hover) {
+[data-theme="dark"]
+  #screen-admin
+  .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):not(:hover) {
   background: transparent !important;
   color: rgba(232, 232, 240, 0.5) !important;
 }
@@ -9379,7 +9427,9 @@ html select {
   color: rgba(18, 18, 24, 0.85) !important;
 }
 
-[data-theme="dark"] #screen-admin .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):hover {
+[data-theme="dark"]
+  #screen-admin
+  .adm-nav-btn:not(.active):not(.adm-nav-btn--danger):hover {
   background: rgba(255, 255, 255, 0.05) !important;
   color: rgba(232, 232, 240, 0.88) !important;
 }
